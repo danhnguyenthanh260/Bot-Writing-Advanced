@@ -1,4 +1,3 @@
-
 export interface User {
   name: string;
   avatarUrl: string;
@@ -17,4 +16,20 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+}
+
+export interface CanvasPage {
+  id: string;
+  title: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
+export interface CanvasBlock {
+  id: string;
+  content: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  pageId: string | null;
+  parentId?: string | null;
 }
