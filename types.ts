@@ -1,15 +1,6 @@
 export interface User {
   name: string;
   avatarUrl: string;
-  preferred_appellation?: string;
-  learning_interests?: string[];
-  learning_goals?: string[];
-}
-
-export interface Document {
-  id: string;
-  name:string;
-  content: string;
 }
 
 export interface Message {
@@ -21,15 +12,21 @@ export interface Message {
 export interface CanvasPage {
   id: string;
   title: string;
+  content: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
 }
 
-export interface CanvasBlock {
+// Represents the AI's deep analysis of a single literary work.
+export interface WorkProfile {
   id: string;
-  content: string;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  pageId: string | null;
-  parentId?: string | null;
+  googleDocUrl: string;
+  title: string;
+  summary: string;
+  totalChapters: number;
+  writingStyle: string;
+  authorHabits: string[];
+  lastAnalyzedChapter: number;
+  // To link pages to this specific work
+  pageIds: string[]; 
 }
