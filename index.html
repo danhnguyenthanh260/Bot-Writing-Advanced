@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -10,6 +9,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
    <style>
+    :root {
+      --accent: #778667;
+      --accent-dark: #5f6f53;
+      --accent-light: #92a67d;
+      --background: #d9e6ca;
+      --background-soft: #ecf4dc;
+      --surface: #f5f9eb;
+      --surface-strong: #eef4e1;
+      --text: #354030;
+      --text-muted: #6f7b64;
+      --neutral-soft: #c8bfae;
+    }
     html, body, #root {
       height: 100%;
     }
@@ -17,22 +28,26 @@
       margin: 0;
       overflow: hidden;
       font-family: 'Be Vietnam Pro', sans-serif;
-      background-color: #0f172a; /* slate-900 */
+      color: var(--text);
+      background-color: var(--background);
+      background-image: radial-gradient(circle at top left, rgba(119, 134, 103, 0.16), transparent 45%),
+        radial-gradient(circle at bottom right, rgba(136, 157, 115, 0.18), transparent 50%);
+      background-attachment: fixed;
     }
     .scrollbar-thin {
         scrollbar-width: thin;
-        scrollbar-color: #4b5563 #1f2937;
+        scrollbar-color: rgba(95, 111, 83, 0.8) rgba(233, 242, 219, 0.7);
     }
     .scrollbar-thin::-webkit-scrollbar {
         width: 8px;
     }
     .scrollbar-thin::-webkit-scrollbar-track {
-        background: #1f2937;
+        background: rgba(222, 233, 204, 0.9);
     }
     .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #4b5563;
+        background-color: rgba(95, 111, 83, 0.8);
         border-radius: 4px;
-        border: 2px solid #1f2937;
+        border: 2px solid rgba(233, 242, 219, 0.9);
     }
   </style>
 <script type="importmap">

@@ -380,51 +380,56 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
     const visiblePages = selectedProfileId ? pages.filter(p => workProfiles.find(wp => wp.id === selectedProfileId)?.pageIds.includes(p.id)) : [];
 
     return (
-         <div className="flex h-full min-h-screen w-full overflow-hidden bg-slate-900 text-white">
-            <aside className="w-80 flex-shrink-0 bg-slate-800 flex flex-col p-4">
+        <div className="flex h-full min-h-screen w-full overflow-hidden bg-[var(--background)] text-[var(--text)]">
+            <aside className="w-80 flex-shrink-0 bg-[var(--surface-strong)]/95 backdrop-blur-sm flex flex-col p-4 border-r border-[rgba(119,134,103,0.18)] shadow-[0_18px_45px_rgba(95,111,83,0.12)]">
                 <div className="flex items-center mb-6">
-                    <BotIcon className="w-8 h-8 text-cyan-400 mr-2" />
-                    <h1 className="text-xl font-bold">Dei8 AI Studio</h1>
+                    <BotIcon className="w-8 h-8 text-[var(--accent)] mr-2" />
+                    <h1 className="text-xl font-semibold text-[var(--accent-dark)]">Dei8 AI Studio</h1>
                 </div>
                  <UploadDocForm onSuccess={handleDocumentImported} />
                 <div className="flex-grow overflow-y-auto scrollbar-thin flex flex-col">
                     <div>
-                        <h2 className="text-sm font-semibold text-slate-400 my-2 uppercase">Dự án Truyện</h2>
+                        <h2 className="text-sm font-semibold text-[var(--text-muted)] my-2 uppercase tracking-wide">Dự án Truyện</h2>
                         {workProfiles.length > 0 ? (
                             <ul>{workProfiles.map(profile => (
                                 <li key={profile.id} className="group">
-                                    <button onClick={() => setSelectedProfileId(profile.id)} className={`w-full text-left p-3 rounded-lg flex items-center justify-between ${selectedProfileId === profile.id ? 'bg-slate-700' : 'hover:bg-slate-700/50'}`}>
+                                    <button
+                                        onClick={() => setSelectedProfileId(profile.id)}
+                                        className={`w-full text-left p-3 rounded-xl flex items-center justify-between transition-all duration-200 ${selectedProfileId === profile.id
+                                            ? 'bg-[var(--accent)] text-white shadow-[0_14px_35px_rgba(95,111,83,0.25)]'
+                                            : 'hover:bg-[var(--surface)] hover:shadow-[0_10px_30px_rgba(95,111,83,0.18)]'}`}
+                                    >
                                         <div className="flex items-center truncate">
-                                            <FileIcon className="w-5 h-5 mr-3 text-slate-400 flex-shrink-0" />
-                                            <span className="truncate text-sm">{profile.title}</span>
+                                            <FileIcon className={`w-5 h-5 mr-3 flex-shrink-0 ${selectedProfileId === profile.id ? 'text-white' : 'text-[var(--accent-dark)]'}`} />
+                                            <span className={`truncate text-sm font-medium ${selectedProfileId === profile.id ? 'text-white' : ''}`}>{profile.title}</span>
                                         </div>
-                                        <div 
+                                        <div
                                             onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: profile.id, type: 'profile', name: profile.title }); }}
-                                            className="p-1 rounded-full hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className={`p-1 rounded-full transition-all duration-200 ${selectedProfileId === profile.id ? 'hover:bg-white/20' : 'hover:bg-[rgba(200,191,174,0.35)] opacity-0 group-hover:opacity-100'}`}
                                         >
-                                            <TrashIcon className="w-4 h-4 text-slate-400 hover:text-red-400" />
+                                            <TrashIcon className={`w-4 h-4 ${selectedProfileId === profile.id ? 'text-white/80 hover:text-white' : 'text-[var(--text-muted)] hover:text-[#b35b4f]'}`} />
                                         </div>
                                     </button>
                                 </li>
                             ))}</ul>
-                        ) : <p className="text-slate-500 text-sm p-3">Chưa có dự án nào. Hãy bắt đầu bằng cách dán link Google Doc vào ô chat.</p>}
+                        ) : <p className="text-[var(--text-muted)] text-sm p-3">Chưa có dự án nào. Hãy bắt đầu bằng cách dán link Google Doc vào ô chat.</p>}
                     </div>
 
-                    <div className="mt-4 border-t border-slate-700 pt-2 flex-grow">
-                        <h2 className="text-sm font-semibold text-slate-400 my-2 uppercase">Workspace Navigation</h2>
-                         <button onClick={() => handleNavigateTo(chatPage.id, 'chat')} className="w-full text-left p-3 rounded-lg flex items-center hover:bg-slate-700/50 text-cyan-400 font-semibold">
+                    <div className="mt-4 border-t border-[rgba(119,134,103,0.2)] pt-2 flex-grow">
+                        <h2 className="text-sm font-semibold text-[var(--text-muted)] my-2 uppercase tracking-wide">Workspace Navigation</h2>
+                         <button onClick={() => handleNavigateTo(chatPage.id, 'chat')} className="w-full text-left p-3 rounded-xl flex items-center text-[var(--accent)] font-semibold transition-all duration-200 hover:bg-[var(--surface)] hover:shadow-[0_10px_30px_rgba(95,111,83,0.18)]">
                             <svg className="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h3v3.767L13.277 18H20c-1.103 0-2-.897 2-2V4c0-1.103-.897-2-2-2zm0 14h-7.277L9 18.233V16H4V4h16v12z"></path></svg>
                              Đi đến Chat
                         </button>
                         {visiblePages.map(page => (
                             <div key={page.id} className="text-sm group">
-                                <button onClick={() => handleNavigateTo(page.id, 'page')} className="w-full text-left p-3 rounded-lg hover:bg-slate-700/50 flex items-center justify-between">
-                                   <span className="truncate">{page.title}</span>
+                                <button onClick={() => handleNavigateTo(page.id, 'page')} className="w-full text-left p-3 rounded-xl flex items-center justify-between transition-all duration-200 hover:bg-[var(--surface)] hover:shadow-[0_10px_30px_rgba(95,111,83,0.18)]">
+                                   <span className="truncate font-medium">{page.title}</span>
                                    <div
                                         onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: page.id, type: 'page', name: page.title }); }}
-                                        className="p-1 rounded-full hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="p-1 rounded-full hover:bg-[rgba(200,191,174,0.35)] opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        <TrashIcon className="w-4 h-4 text-slate-400 hover:text-red-400" />
+                                        <TrashIcon className="w-4 h-4 text-[var(--text-muted)] hover:text-[#b35b4f]" />
                                     </div>
                                 </button>
                             </div>
@@ -432,9 +437,9 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
                     </div>
                 </div>
             </aside>
-            <main className="flex-1 flex flex-col bg-slate-700 overflow-hidden">
-                <header className="flex items-center justify-end p-4 bg-slate-800/50 border-b border-slate-600">
-                    {user ? <div className="flex items-center"><span className="mr-3 font-medium">{user.name}</span><img src={user.avatarUrl} alt="User Avatar" className="w-10 h-10 rounded-full" /></div> : <button onClick={handleLogin} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center"><GoogleIcon className="w-5 h-5 mr-2" /> Đăng nhập</button>}
+            <main className="flex-1 flex flex-col bg-[var(--surface)]/85 backdrop-blur-sm overflow-hidden">
+                <header className="flex items-center justify-end p-4 bg-[var(--surface-strong)]/80 border-b border-[rgba(119,134,103,0.2)] shadow-[0_8px_25px_rgba(95,111,83,0.08)]">
+                    {user ? <div className="flex items-center"><span className="mr-3 font-medium text-[var(--accent-dark)]">{user.name}</span><img src={user.avatarUrl} alt="User Avatar" className="w-10 h-10 rounded-full border border-[rgba(119,134,103,0.35)]" /></div> : <button onClick={handleLogin} className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] text-white font-semibold py-2 px-4 rounded-xl flex items-center shadow-[0_12px_30px_rgba(95,111,83,0.25)] transition-colors duration-200"><GoogleIcon className="w-5 h-5 mr-2" /> Đăng nhập</button>}
                 </header>
                     <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
                     <div className="flex-1 min-h-0 overflow-hidden">
@@ -448,9 +453,9 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
                         />
                     </div>
                      <div className="absolute bottom-0 left-0 right-0 p-6 z-30 pointer-events-none">
-                        <div className="max-w-4xl mx-auto bg-slate-800/90 backdrop-blur-sm rounded-xl p-2 flex items-center shadow-2xl pointer-events-auto">
-                             <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(input); } }} placeholder="Dán link Google Doc hoặc trò chuyện với Trợ lý Biên tập..." className="flex-1 bg-transparent focus:outline-none p-2 resize-none text-white" rows={1} disabled={isLoading} />
-                            <button onClick={() => handleSendMessage(input)} disabled={isLoading || !input.trim()} className="bg-cyan-500 text-white p-2 rounded-lg disabled:bg-slate-600 hover:bg-cyan-600"><SendIcon className="w-6 h-6" /></button>
+                        <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-md border border-[rgba(119,134,103,0.18)] rounded-2xl p-3 flex items-center shadow-[0_25px_60px_rgba(95,111,83,0.22)] pointer-events-auto transition-all">
+                             <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(input); } }} placeholder="Dán link Google Doc hoặc trò chuyện với Trợ lý Biên tập..." className="flex-1 bg-transparent focus:outline-none p-2 resize-none text-[var(--text)] placeholder:text-[rgba(111,123,100,0.8)]" rows={1} disabled={isLoading} />
+                            <button onClick={() => handleSendMessage(input)} disabled={isLoading || !input.trim()} className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] disabled:bg-[rgba(111,123,100,0.45)] text-white p-2 rounded-xl transition-colors duration-200 shadow-[0_12px_30px_rgba(95,111,83,0.25)] disabled:shadow-none"><SendIcon className="w-6 h-6" /></button>
                         </div>
                     </div>
                 </div>
@@ -473,5 +478,4 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
         </div>
     );
 };
-
 export default App;
