@@ -22,13 +22,12 @@ The core concept is to provide authors with a powerful, integrated environment t
 Couple AI leverages a powerful, custom-engineered System Prompt for the Google Gemini API to function as a specialized application.
 
 1.  **System Prompt Engineering:** A sophisticated system prompt defines the AI's persona as an "Editorial & Publishing Assistant" and outlines a set of structured "ACTION TAGS" it must use to communicate with the React frontend.
-2.  **Structured AI Responses:** When you provide a Google Doc URL, the AI doesn't just chat. It responds with natural language followed by an `[ACTION_ANALYZE_DOC_URL]` tag containing a structured JSON object with the full analysis of your work.
-3.  **Frontend Parsing & State Management:** The React application receives the AI's response, displays the conversational part, and then parses the action tags.
+2.  **Structured AI Responses:** When you provide a Google Doc URL, the AI responds with natural language followed by an `[ACTION_INGEST_DOC]{...}` block containing validated metadata about the manuscript.
+3.  **Frontend Parsing & State Management:** The React application uses a Zod-backed parser to validate action payloads before mutating UI state, ensuring malformed data never crashes the experience.
 4.  **Dynamic UI & Workflow:**
-    *   If an `[ACTION_ANALYZE_DOC_URL]` tag is found, the app creates a new `WorkProfile` and automatically sets up a 3-page workspace (Draft, Critique, Final) on the canvas for that story.
-    *   If an `[ACTION_CRITIQUE_DRAFT]` tag is found, a new page containing the AI's detailed feedback is created.
-    *   If an `[ACTION_PUBLISH_CHAPTER]` tag is found, the app simulates a "function call" to the publishing platform, demonstrating the automated workflow.
-
+    *   `[ACTION_INGEST_DOC]` creates a `WorkProfile` and automatically sets up a 3-page workspace (Draft, Critique, Final) on the canvas for that story.
+    *   `[ACTION_CREATE_CRITIQUE_PAGE]` drops a new critique page with the supplied Markdown content.
+    *   `[ACTION_PREPARE_PUBLICATION]` opens a confirmation modal prefilled with publishing parameters.
 ## 💻 Tech Stack
 
 *   **Frontend:** React 19, TypeScript
