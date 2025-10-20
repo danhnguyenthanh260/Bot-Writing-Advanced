@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { User } from '../types';
+import type { DocumentContextForAI, User } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -70,7 +70,15 @@ const SYSTEM_INSTRUCTION = `// SYSTEM DIRECTIVE: Couple AI - Editorial & Publish
 // }
 // Mình đã tạo workspace bao gồm trang Nháp, Đánh giá và Hoàn chỉnh để bạn tiếp tục làm việc nhé!"`;
 
-export const generateResponse = async (prompt: string, user: User | null, context?: string): Promise<string> => {
+
+const MAX_DOC_CONTEXT_CHARS = 15000;
+
+export const generateResponse = async (
+    prompt: string,
+    user: User | null,
+    context?: string,
+    documentContext?: DocumentContextForAI,
+): Promise<string> => {
     let finalPrompt = prompt;
     const contextParts: string[] = [];
     if (user) {
@@ -79,6 +87,31 @@ export const generateResponse = async (prompt: string, user: User | null, contex
     if (context) {
         contextParts.push(`This is additional context for the user's query:\n\n--- CONTEXT ---\n${context}\n\n--- END CONTEXT ---`);
     }
+
+    if (documentContext) {
+        const outlineText = (documentContext.outline ?? [])
+            .map(section => {
+                const indent = section.level > 1 ? '  '.repeat(section.level - 1) : '';
+                return `${indent}- ${section.heading}`;
+            })
+            .slice(0, 30)
+            .join('\n');
+
+        const plainText = documentContext.plainText ?? '';
+        const truncatedPlainText = plainText.length > MAX_DOC_CONTEXT_CHARS
+            ? `${plainText.slice(0, MAX_DOC_CONTEXT_CHARS)}…`
+            : plainText;
+
+        contextParts.push([
+            'Thông tin chi tiết về tài liệu Google Docs hiện hành:',
+            `Tiêu đề: ${documentContext.title}`,
+            `Tóm tắt nội bộ: ${documentContext.summary ?? 'Chưa có tóm tắt.'}`,
+            documentContext.wordCount ? `Độ dài ước tính: ${documentContext.wordCount} từ.` : undefined,
+            outlineText ? `Phác thảo chương mục:\n${outlineText}` : undefined,
+            `Nội dung (đã cắt gọn tối đa ${MAX_DOC_CONTEXT_CHARS} ký tự):\n${truncatedPlainText}`,
+        ].filter(Boolean).join('\n\n'));
+    }
+    
     finalPrompt = `${contextParts.join('\n\n')}\n\n--- USER'S PROMPT ---\n${prompt}`;
 
     try {
