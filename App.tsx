@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { User, Message, CanvasPage, WorkProfile } from './types';
 import { generateResponse } from './services/geminiService';
+import { ActionTag, parseModelActions, type ActionPayloads } from './services/actionSchema';
+import { createCritiquePageFromAction, createWorkProfileFromIngestAction, ensureProfileAssociation } from './services/actionEffects';
 import { GoogleIcon, FileIcon, SendIcon, BotIcon, TrashIcon } from './components/icons';
 import DocumentCanvas, { type DocumentCanvasHandle } from './components/DocumentCanvas';
 import PublishModal from './components/PublishModal';
@@ -119,63 +121,97 @@ const App: React.FC = () => {
         try {
             const rawResponse = await generateResponse(trimmedInput, user, context);
             
-            const userFacingText = rawResponse.split('[ACTION_')[0].trim();
-            const assistantMessage: Message = { id: `assistant-${Date.now()}`, role: 'assistant', text: userFacingText };
+ const { userFacingText, actions } = parseModelActions(rawResponse);
+            const assistantMessage: Message = {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant',
+                text: userFacingText || 'Mình đã xử lý yêu cầu của bạn!'
+            };
             setMessages(prev => [...prev, assistantMessage]);
 
-            // --- ACTION: ANALYZE DOC URL ---
-            const analyzeActionRegex = /\[ACTION_ANALYZE_DOC_URL\]([\s\S]*?)\[END_ACTION_ANALYZE_DOC_URL\]/g;
-            const analyzeMatch = analyzeActionRegex.exec(rawResponse);
-            if (analyzeMatch) {
-                const profileJson = JSON.parse(analyzeMatch[1].trim());
-                const profileId = `work-${Date.now()}`;
-                const newProfile: WorkProfile = {
-                    ...profileJson,
-                    id: profileId,
-                    googleDocUrl: trimmedInput,
-                    pageIds: []
-                };
+            let updatedPages = pages;
+            let updatedWorkProfiles = workProfiles;
+            let updatedSelectedProfileId = selectedProfileId;
+            let pagesChanged = false;
+            let profilesChanged = false;
+            let selectedChanged = false;
+            let publishParams: ActionPayloads[ActionTag.PREPARE_PUBLICATION] | null = null;
+            let shouldOpenPublishModal = false;
+            let focusPageId: string | null = null;
 
-                const draftPage: CanvasPage = { id: `page-${Date.now()}-draft`, title: `Bản Nháp - ${profileJson.title}`, content: `# Bắt đầu viết bản nháp của bạn ở đây...`, position: { x: 100, y: 100 }, size: { width: 400, height: 300 }};
-                const critiquePage: CanvasPage = { id: `page-${Date.now()}-critique`, title: `Đánh giá - ${profileJson.title}`, content: `# Nơi nhận các phân tích và góp ý từ AI.`, position: { x: 550, y: 100 }, size: { width: 400, height: 300 }};
-                const finalPage: CanvasPage = { id: `page-${Date.now()}-final`, title: `Hoàn chỉnh - ${profileJson.title}`, content: `# Nơi chứa chương truyện đã được chau chuốt.`, position: { x: 1000, y: 100 }, size: { width: 400, height: 300 }};
-                
-                newProfile.pageIds = [draftPage.id, critiquePage.id, finalPage.id];
-                
-                setPages(prev => [...prev, draftPage, critiquePage, finalPage]);
-                setWorkProfiles(prev => [...prev, newProfile]);
-                setSelectedProfileId(profileId);
-            }
-
-            // --- ACTION: CRITIQUE DRAFT ---
-            const critiqueActionRegex = /\[ACTION_CRITIQUE_DRAFT\]([\s\S]*?)\[END_ACTION_CRITIQUE_DRAFT\]/g;
-            const critiqueMatch = critiqueActionRegex.exec(rawResponse);
-            if(critiqueMatch){
-                const actionContent = critiqueMatch[1];
-                const titleMatch = /PageTitle: "([^"]+)"/.exec(actionContent);
-                const contentMatch = /PageContent: """([\s\S]*?)"""/.exec(actionContent);
-
-                if (titleMatch && contentMatch && selectedProfileId) {
-                    const newPage: CanvasPage = {
-                        id: `page-${Date.now()}`,
-                        title: titleMatch[1],
-                        content: contentMatch[1].trim(),
-                        position: { x: 150 + (pages.length % 3) * 450, y: 150 + Math.floor(pages.length / 3) * 450 },
-                        size: { width: 400, height: 300 }
-                    };
-                    setPages(prev => [...prev, newPage]);
-                    setWorkProfiles(prev => prev.map(p => p.id === selectedProfileId ? {...p, pageIds: [...p.pageIds, newPage.id]} : p));
-                    setTimeout(() => canvasRef.current?.focusOn(newPage.id, 'page'), 100);
+            actions.forEach(action => {
+                switch (action.type) {
+                    case ActionTag.INGEST_DOC: {
+                        const { profile, pages: generatedPages } = createWorkProfileFromIngestAction(action.payload, trimmedInput);
+                        updatedPages = [...updatedPages, ...generatedPages];
+                        updatedWorkProfiles = [...updatedWorkProfiles, profile];
+                        updatedSelectedProfileId = profile.id;
+                        pagesChanged = true;
+                        profilesChanged = true;
+                        selectedChanged = true;
+                        break;
+                    }
+                    case ActionTag.CREATE_CRITIQUE_PAGE: {
+                        if (updatedWorkProfiles.length === 0) {
+                            console.warn('Received critique action but no work profiles are available.');
+                            break;
+                        }
+                        const profileIds = updatedWorkProfiles.map(p => p.id);
+                        const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProfileId, action.payload.profileId);
+                        if (!targetProfileId) {
+                            console.warn('Unable to determine a target profile for critique page.');
+                            break;
+                        }
+                        const targetProfile = updatedWorkProfiles.find(p => p.id === targetProfileId);
+                        const existingCount = targetProfile ? targetProfile.pageIds.length : 0;
+                        const newPage = createCritiquePageFromAction(action.payload, existingCount);
+                        updatedPages = [...updatedPages, newPage];
+                        updatedWorkProfiles = updatedWorkProfiles.map(profile =>
+                            profile.id === targetProfileId
+                                ? { ...profile, pageIds: [...profile.pageIds, newPage.id] }
+                                : profile
+                        );
+                        focusPageId = newPage.id;
+                        if (updatedSelectedProfileId !== targetProfileId) {
+                            updatedSelectedProfileId = targetProfileId;
+                            selectedChanged = true;
+                        }
+                        pagesChanged = true;
+                        profilesChanged = true;
+                        break;
+                    }
+                    case ActionTag.PREPARE_PUBLICATION: {
+                        publishParams = action.payload;
+                        shouldOpenPublishModal = true;
+                        break;
+                    }
+                    default: {
+                        console.warn('Unhandled action received from model:', action.type);
+                    }
                 }
+            });
+
+            if (pagesChanged) {
+                setPages(updatedPages);
+            }
+            if (profilesChanged) {
+                setWorkProfiles(updatedWorkProfiles);
+            }
+            if (selectedChanged) {
+                setSelectedProfileId(updatedSelectedProfileId);
+            }
+            if (shouldOpenPublishModal && publishParams) {
+                setPublishingParams(publishParams);
+                setIsPublishingModalOpen(true);
             }
 
-             // --- ACTION: PUBLISH CHAPTER ---
-            const publishActionRegex = /\[ACTION_PUBLISH_CHAPTER\]([\s\S]*?)\[END_ACTION_PUBLISH_CHAPTER\]/g;
-            const publishMatch = publishActionRegex.exec(rawResponse);
-            if (publishMatch) {
-                const params = JSON.parse(publishMatch[1].trim());
-                setPublishingParams(params);
-                setIsPublishingModalOpen(true);
+            if (focusPageId) {
+                const targetPageId = focusPageId;
+                setTimeout(() => {
+                    if (targetPageId) {
+                        canvasRef.current?.focusOn(targetPageId, 'page');
+                    }
+                }, 100);
             }
 
         } catch (error) {
@@ -218,7 +254,7 @@ const App: React.FC = () => {
     const visiblePages = selectedProfileId ? pages.filter(p => workProfiles.find(wp => wp.id === selectedProfileId)?.pageIds.includes(p.id)) : [];
 
     return (
-        <div className="flex h-screen w-screen bg-slate-900 text-white">
+         <div className="flex h-full min-h-screen w-full overflow-hidden bg-slate-900 text-white">
             <aside className="w-80 flex-shrink-0 bg-slate-800 flex flex-col p-4">
                 <div className="flex items-center mb-6">
                     <BotIcon className="w-8 h-8 text-cyan-400 mr-2" />
@@ -270,19 +306,21 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </aside>
-            <main className="flex-1 flex flex-col bg-slate-700">
+            <main className="flex-1 flex flex-col bg-slate-700 overflow-hidden">
                 <header className="flex items-center justify-end p-4 bg-slate-800/50 border-b border-slate-600">
                     {user ? <div className="flex items-center"><span className="mr-3 font-medium">{user.name}</span><img src={user.avatarUrl} alt="User Avatar" className="w-10 h-10 rounded-full" /></div> : <button onClick={handleLogin} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center"><GoogleIcon className="w-5 h-5 mr-2" /> Đăng nhập</button>}
                 </header>
-                <div className="flex-1 flex flex-col relative">
-                    <DocumentCanvas
-                        ref={canvasRef}
-                        pages={visiblePages}
-                        setPages={setPages}
-                        messages={messages}
-                        chatPage={chatPage}
-                        setChatPage={setChatPage}
-                    />
+                    <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <DocumentCanvas
+                            ref={canvasRef}
+                            pages={visiblePages}
+                            setPages={setPages}
+                            messages={messages}
+                            chatPage={chatPage}
+                            setChatPage={setChatPage}
+                        />
+                    </div>
                      <div className="absolute bottom-0 left-0 right-0 p-6 z-30 pointer-events-none">
                         <div className="max-w-4xl mx-auto bg-slate-800/90 backdrop-blur-sm rounded-xl p-2 flex items-center shadow-2xl pointer-events-auto">
                              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(input); } }} placeholder="Dán link Google Doc hoặc trò chuyện với Trợ lý Biên tập..." className="flex-1 bg-transparent focus:outline-none p-2 resize-none text-white" rows={1} disabled={isLoading} />

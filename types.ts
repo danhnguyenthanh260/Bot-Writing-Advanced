@@ -21,6 +21,7 @@ export interface CanvasPage {
 export interface WorkProfile {
   id: string;
   googleDocUrl: string;
+  docId?: string;
   title: string;
   summary: string;
   totalChapters: number;
