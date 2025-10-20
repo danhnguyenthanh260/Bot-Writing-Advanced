@@ -65,8 +65,8 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
             }
         };
         
-        return (
-            <div className="w-full h-full overflow-hidden bg-slate-900 bg-[radial-gradient(#475569_1px,transparent_1px)] [background-size:32px_32px]">
+      return (
+            <div className="w-full h-full overflow-hidden bg-[var(--background)] bg-[radial-gradient(circle_at_top,_rgba(119,134,103,0.15),transparent_55%)] [background-size:480px_480px]">
                 <TransformWrapper
                     ref={transformComponentRef}
                     initialScale={1}
@@ -90,7 +90,7 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                     onResizeStop={(e, direction, ref, delta, position) => handleResizeStop(page.id, ref, position)}
                                     minWidth={200}
                                     bounds="parent"
-                                    className="shadow-2xl rounded-lg overflow-hidden border-2 border-slate-600 bg-slate-800"
+                                    className="rounded-2xl overflow-hidden border border-[rgba(119,134,103,0.28)] bg-white/95 shadow-[0_25px_60px_rgba(95,111,83,0.16)] backdrop-blur-sm transition-all duration-200 hover:shadow-[0_28px_70px_rgba(95,111,83,0.22)]"
                                     dragHandleClassName="handle"
                                     enableResizing={{
                                         top: false,
@@ -104,11 +104,11 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                     }}
                                 >
                                     <div className="flex flex-col h-full">
-                                        <div className="p-3 bg-slate-700 font-bold cursor-move handle">
+                                        <div className="p-4 bg-[var(--accent)]/90 text-white font-semibold cursor-move handle flex items-center justify-between">
                                             {page.title}
                                         </div>
                                         {/* FIX: The `className` prop is not valid on `ReactMarkdown`. Moved prose classes to the parent div. */}
-                                        <div className="p-4 flex-1 prose prose-sm prose-invert max-w-none">
+                                        <div className="p-4 flex-1 prose prose-sm max-w-none text-[var(--text)] prose-headings:text-[var(--accent-dark)] prose-a:text-[var(--accent)]">
                                             <ReactMarkdown>
                                                 {page.content}
                                             </ReactMarkdown>
@@ -116,7 +116,7 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                     </div>
                                 </Rnd>
                             ))}
-                            
+
                             {/* Render Chat Widget */}
                             <Rnd
                                 key={chatPage.id}
@@ -127,7 +127,7 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                 minWidth={300}
                                 minHeight={400}
                                 bounds="parent"
-                                className="shadow-2xl rounded-lg overflow-hidden border-2 border-cyan-500"
+                                className="rounded-2xl overflow-hidden border border-[var(--accent)] shadow-[0_25px_60px_rgba(95,111,83,0.22)] backdrop-blur-sm"
                                 dragHandleClassName="handle"
                             >
                                 <ChatWidget messages={messages} />
@@ -139,5 +139,4 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
         );
     }
 );
-
 export default DocumentCanvas;
