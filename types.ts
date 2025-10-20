@@ -17,6 +17,22 @@ export interface CanvasPage {
   size: { width: number; height: number };
 }
 
+export interface GoogleDocSection {
+  heading: string;
+  level: number;
+  paragraphs: string[];
+}
+
+export interface StructuredGoogleDoc {
+  docId: string;
+  title: string;
+  revisionId?: string;
+  plainText: string;
+  wordCount: number;
+  outline: GoogleDocSection[];
+  lastUpdated?: string;
+}
+
 // Represents the AI's deep analysis of a single literary work.
 export interface WorkProfile {
   id: string;
@@ -28,6 +44,24 @@ export interface WorkProfile {
   writingStyle: string;
   authorHabits: string[];
   lastAnalyzedChapter: number;
+  outline?: GoogleDocSection[];
+  rawText?: string;
+  lastSyncedAt?: string;
+  document?: StructuredGoogleDoc;
   // To link pages to this specific work
   pageIds: string[]; 
+}
+
+export interface DocumentContextForAI {
+  title: string;
+  summary?: string;
+  plainText: string;
+  outline?: GoogleDocSection[];
+  wordCount?: number;
+}
+
+export interface GoogleDocIngestResponse {
+  docId: string;
+  document: StructuredGoogleDoc;
+  workProfile: WorkProfile;
 }

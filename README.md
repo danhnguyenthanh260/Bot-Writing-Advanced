@@ -1,62 +1,118 @@
-# Couple AI - Your Professional Writing & Publishing Studio
+# Dei8 AI - Your Professional Writing & Publishing Studio
 
 ## 🚀 Introduction
 
-Couple AI is an intelligent studio designed to be a professional partner for literary authors. It transforms the solitary process of writing into an interactive, AI-assisted journey, from initial analysis and drafting to critique and automated publishing.
+Dei8 AI is an intelligent studio designed to be a professional partner for literary authors. It transforms the solitary process of writing into an interactive, AI-assisted journey, from initial analysis and drafting to critique and automated publishing.
 
-The core concept is to provide authors with a powerful, integrated environment that understands their work deeply. By analyzing a story via a Google Doc link, Couple AI creates a "Work Profile"—a condensed summary of the plot, writing style, and author's habits. This profile allows the AI to provide highly relevant, contextual feedback within a flexible canvas workspace, streamlining the entire creative lifecycle.
+The latest release introduces a secure backend proxy around the Google Docs API. Instead of asking Gemini to follow a link blindly, the application now authenticates with Google, ingests the real document, converts it into a structured outline, and stores a normalized "Work Profile" for downstream tooling. The React workspace automatically spins up drafting, critique, and polishing pages while the chat assistant leverages the actual manuscript text for contextual responses.
 
 ## ✨ Core Features
 
-*   **✍️ Professional Editorial Assistant:** Engage with an AI trained to act as a professional editor, providing insightful feedback on drafts.
-*   **🔗 Google Doc Integration:** Simply provide a Google Doc link to your manuscript. The AI performs a deep analysis to understand your story's essence.
-*   **📖 Automated Work Profile:** The AI generates a persistent "Work Profile" for each story, summarizing the plot, style, chapter count, and even your unique writing habits. This profile ensures the AI's advice is always relevant.
-*   **⚡️ Efficient Updates:** The AI is smart. After the initial analysis, it will only scan for new chapters in your Google Doc, making updates fast and efficient.
-*   **🎨 Dynamic Workspace Canvas:** The familiar infinite canvas is optimized for a writer's workflow, providing dedicated, linked pages for your Drafts, AI Critiques, and Final Chapters for each project.
-*   **📝 Google Docs-like Interaction:** Pages on the canvas behave like documents. Their height is automatic, and you can adjust their width, allowing content to reflow naturally.
-*   **🤖 Automated Publishing:** A "killer feature" that automates the final step. Instruct the AI to publish your finalized chapter, and it will prepare the data to be sent to platforms like Royal Road (simulation-ready).
-*   **💾 Persistent State:** Your entire studio—messages, work profiles, and all pages—is automatically saved to your browser's `localStorage`.
+* **✍️ Professional Editorial Assistant:** Engage with an AI trained to act as a professional editor, providing insightful feedback on drafts.
+* **🔗 Google Doc Integration via API:** Paste a Google Docs URL into the new upload form. The backend proxies the request, handles OAuth or Service Accounts, and returns a structured JSON model of your story.
+* **📖 Automated Work Profile:** Every ingestion converts headings and paragraphs into a persistent profile summarizing plot beats, style, writing habits, and word counts.
+* **⚡️ Efficient Updates:** Re-ingesting the same document refreshes the stored profile and workspace without duplicating pages.
+* **🎨 Dynamic Workspace Canvas:** The infinite canvas still provides dedicated Draft, Critique, and Final pages for each story with pan/zoom controls.
+* **🤖 Automated Publishing:** Ask the assistant to publish and it prepares the payload for the target platform (simulation ready).
+* **💾 Persistent State:** Messages, work profiles, and canvas pages are stored in `localStorage` so your studio survives refreshes.
 
-## 🛠️ How It Works
+## 🧠 How the Pipeline Works
 
-Couple AI leverages a powerful, custom-engineered System Prompt for the Google Gemini API to function as a specialized application.
+1. **UploadDocForm (frontend):** The React sidebar renders `UploadDocForm.tsx`, which calls `POST /api/google-docs/ingest` with the user-provided URL. It surfaces loading states and explicit permission errors from Google.
+2. **Express Backend Proxy:** `server/index.ts` exposes `/api/google-docs` routes. Requests flow through `services/googleDocsService.ts`, which authenticates with Google using OAuth refresh tokens or Service Accounts.
+3. **Google Docs Service:** `googleDocsService` downloads the document, walks through paragraphs/headings, and produces a normalized `StructuredGoogleDoc` JSON payload.
+4. **Conversion & Storage:** `convertGoogleDocToWorkProfile` extracts key analytics (outline, writing style heuristics, author habits) and saves them in the in-memory store (`server/storage/workProfilesStore.ts`).
+5. **Frontend Hydration:** The response hydrates a `WorkProfile` in React, spawns Draft/Critique/Final canvas pages, and posts an assistant summary message.
+6. **Context-Aware Chat:** `services/geminiService.ts` now injects document outlines and truncated manuscript text when sending prompts to Gemini, ensuring critiques reference the real story instead of a bare URL.
 
-1.  **System Prompt Engineering:** A sophisticated system prompt defines the AI's persona as an "Editorial & Publishing Assistant" and outlines a set of structured "ACTION TAGS" it must use to communicate with the React frontend.
-2.  **Structured AI Responses:** When you provide a Google Doc URL, the AI responds with natural language followed by an `[ACTION_INGEST_DOC]{...}` block containing validated metadata about the manuscript.
-3.  **Frontend Parsing & State Management:** The React application uses a Zod-backed parser to validate action payloads before mutating UI state, ensuring malformed data never crashes the experience.
-4.  **Dynamic UI & Workflow:**
-    *   `[ACTION_INGEST_DOC]` creates a `WorkProfile` and automatically sets up a 3-page workspace (Draft, Critique, Final) on the canvas for that story.
-    *   `[ACTION_CREATE_CRITIQUE_PAGE]` drops a new critique page with the supplied Markdown content.
-    *   `[ACTION_PREPARE_PUBLICATION]` opens a confirmation modal prefilled with publishing parameters.
 ## 💻 Tech Stack
 
-*   **Frontend:** React 19, TypeScript
-*   **Styling:** Tailwind CSS
-*   **AI Model:** Google Gemini API (`@google/genai`)
-*   **Markdown Rendering:** `react-markdown`
-*   **Canvas Interaction:** Custom implementation for pan, zoom, and contextual resizing/panning.
+* **Frontend:** React 19, TypeScript, Vite, Tailwind-style utility classes.
+* **Backend:** Express 4 (TypeScript), Google APIs Node client, CORS middleware.
+* **AI Model:** Google Gemini API (`@google/genai`).
+* **Document Ingestion:** Google Docs API via OAuth 2.0 or Service Accounts.
+* **State Persistence:** Browser `localStorage` for client-side data; in-memory store for the API proxy.
 
-## 🚀 Getting Started
+## 🧰 Environment Configuration
 
-1.  **Clone the repository.**
-2.  **Install dependencies** (`npm install`).
-3.  **Set up your Google Gemini API Key** as an environment variable (`process.env.API_KEY`).
-4.  **Start the development server** (`npm start`).
-5.  **Interact:** Paste a public Google Doc link into the chat to begin.
+| Variable | Where | Description |
+| --- | --- | --- |
+| `API_KEY` | Frontend & backend | Gemini API key consumed by `@google/genai`.
+| `GOOGLE_CLIENT_ID` | Backend | OAuth 2.0 client ID (installed application or web application).
+| `GOOGLE_CLIENT_SECRET` | Backend | OAuth 2.0 client secret.
+| `GOOGLE_REFRESH_TOKEN` | Backend | Long-lived refresh token obtained after user consent. Required for OAuth mode.
+| `GOOGLE_REDIRECT_URI` | Backend | Redirect URI used when minting the refresh token. Optional for service accounts.
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Backend | Service account email (alternative auth path).
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | Backend | Service account private key. Remember to replace literal `\n` with real newlines.
+| `PORT` | Backend | Port for the Express server (default `3001`).
+| `CORS_ORIGIN` | Backend | Comma-separated list of allowed origins for CORS (e.g., `http://localhost:5173`).
+| `VITE_API_BASE_URL` | Frontend | Base URL for API calls (e.g., `http://localhost:3001`). Leave blank when serving from the same origin.
+
+> **Authentication Options:** Provide either the OAuth fields (`GOOGLE_CLIENT_*` + `GOOGLE_REFRESH_TOKEN`) or the service account fields. If both are present, the service account takes precedence.
+
+## 🔑 Setting Up Google Cloud Credentials
+
+1. **Create or select a Google Cloud project.**
+2. **Enable the Google Docs API:** In the Google Cloud Console, navigate to *APIs & Services → Library* and enable *Google Docs API*.
+3. **Choose your authentication model:**
+   * **Service Account (server-to-server):**
+     1. Create a new service account under *APIs & Services → Credentials*.
+     2. Generate a JSON key and copy `client_email` and `private_key` into the `GOOGLE_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` variables (convert `\n` to actual newlines).
+     3. Share every document you plan to ingest with the service account email (view access is sufficient).
+   * **OAuth Client (user consent):**
+     1. Create an OAuth 2.0 Client ID. For local development you can use an "Desktop" or "Web" application type.
+     2. Add `http://localhost:3001/oauth2callback` (or your chosen redirect) to the authorized redirect URIs.
+     3. Use the client ID/secret to run a one-time OAuth flow (for example with [Google's OAuth playground](https://developers.google.com/oauthplayground)). Request the `https://www.googleapis.com/auth/documents.readonly` scope, authorize, and copy the refresh token into `GOOGLE_REFRESH_TOKEN`.
+4. **Store credentials securely:** Use `.env` files or your deployment's secret manager. Never commit raw credentials to version control.
+
+## ▶️ Running the Project Locally
+
+1. **Install dependencies** (requires access to npm registry packages referenced in `package.json`):
+   ```bash
+   npm install
+   ```
+   > If your environment blocks certain packages, ensure whitelisting for `googleapis`, `express`, and related `@types` packages.
+2. **Create environment files:**
+   * Backend (`.env` or shell exports): set Google credentials, `API_KEY`, `PORT`, and `CORS_ORIGIN`.
+   * Frontend (`.env.local`): set `VITE_API_BASE_URL` to `http://localhost:3001` (or empty if proxied) and `API_KEY`.
+3. **Start the backend proxy:**
+   ```bash
+   npm run server
+   ```
+4. **Start the Vite dev server:**
+   ```bash
+   npm run dev
+   ```
+5. **Use the studio:** Open the frontend (default `http://localhost:5173`), paste a Google Docs URL into the "Phân tích Google Docs" form, and monitor status messages for loading or permission issues.
+
+## 🧭 Usage Tips
+
+* The assistant posts a summary message automatically after ingestion. Re-uploading the same document replaces the existing workspace instead of duplicating it.
+* Chat prompts now include the manuscript outline and truncated text, enabling far more specific critiques. Gemini responses will still emit `ACTION_CRITIQUE_DRAFT` blocks when applicable.
+* Permission errors from Google (HTTP 401/403) appear directly in the sidebar form so you can fix sharing or refresh tokens quickly.
 
 ## 📁 Project Structure
 
 ```
 .
-├── src/
-│   ├── components/
-│   │   ├── ChatWidget.tsx
-│   │   ├── DocumentCanvas.tsx
-│   │   └── icons.tsx
-│   ├── services/
-│   │   └── geminiService.ts    # Contains the core System Prompt for the AI
-│   ├── App.tsx                 # Main application component, manages state
-│   ├── index.tsx
-│   └── types.ts                # Defines crucial types like WorkProfile
+├── App.tsx
+├── components/
+│   ├── DocumentCanvas.tsx
+│   ├── UploadDocForm.tsx
+│   └── ...
+├── services/
+│   ├── geminiService.ts
+│   └── googleDocsService.ts
+├── server/
+│   ├── index.ts
+│   ├── routes/
+│   │   └── googleDocs.ts
+│   └── storage/
+│       └── workProfilesStore.ts
+├── types.ts
 └── ...
 ```
+
+## 📞 Support & Contributions
+
+Issues and feature requests are welcome! Please document reproduction steps, include logs from both the frontend console and backend server, and omit any sensitive credentials. Pull requests should include updated documentation when introducing new environment variables or deployment considerations.

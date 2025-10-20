@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { User, Message, CanvasPage, WorkProfile } from './types';
+import type { User, Message, CanvasPage, WorkProfile, GoogleDocIngestResponse, DocumentContextForAI } from './types';
 import { generateResponse } from './services/geminiService';
 import { ActionTag, parseModelActions, type ActionPayloads } from './services/actionSchema';
 import { createCritiquePageFromAction, createWorkProfileFromIngestAction, ensureProfileAssociation } from './services/actionEffects';
@@ -7,6 +7,7 @@ import { GoogleIcon, FileIcon, SendIcon, BotIcon, TrashIcon } from './components
 import DocumentCanvas, { type DocumentCanvasHandle } from './components/DocumentCanvas';
 import PublishModal from './components/PublishModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
+import UploadDocForm from './components/UploadDocForm';
 
 const LOCAL_STORAGE_KEYS = {
     MESSAGES: 'couple_ai_writer_messages',
@@ -14,6 +15,33 @@ const LOCAL_STORAGE_KEYS = {
     CHAT_PAGE: 'couple_ai_writer_chat_page',
     WORK_PROFILES: 'couple_ai_writer_work_profiles',
     LAST_SELECTED_PROFILE: 'couple_ai_writer_last_profile',
+};
+
+const normalizeWorkProfile = (profile: WorkProfile): WorkProfile => {
+    const docId = profile.docId ?? profile.id;
+    const outline = profile.outline ?? profile.document?.outline ?? [];
+    const rawText = profile.rawText ?? profile.document?.plainText ?? '';
+    const document = profile.document ?? (rawText
+        ? {
+            docId,
+            title: profile.title,
+            revisionId: profile.document?.revisionId,
+            plainText: rawText,
+            wordCount: rawText ? rawText.trim().split(/\s+/).length : 0,
+            outline,
+            lastUpdated: profile.lastSyncedAt,
+        }
+        : undefined);
+
+    return {
+        ...profile,
+        docId,
+        outline,
+        rawText,
+        lastSyncedAt: profile.lastSyncedAt ?? document?.lastUpdated ?? new Date().toISOString(),
+        document,
+        pageIds: profile.pageIds ?? [],
+    };
 };
 
 const App: React.FC = () => {
@@ -29,12 +57,96 @@ const App: React.FC = () => {
     
     // State for the publishing modal
     const [isPublishingModalOpen, setIsPublishingModalOpen] = useState(false);
-    const [publishingParams, setPublishingParams] = useState<any>(null);
+    type PublishModalParams = {
+    platform: string;
+    storyUrl: string;
+    chapterTitle: string;
+    contentSourcePageId: string;
+    profileId?: string; 
+};
+
+const [publishingParams, setPublishingParams] = useState<PublishModalParams | null>(null);
 
     // State for the delete confirmation modal
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: 'profile' | 'page'; name: string; } | null>(null);
 
     const canvasRef = useRef<DocumentCanvasHandle>(null);
+
+    const handleDocumentImported = (payload: GoogleDocIngestResponse) => {
+        const { document, workProfile } = payload;
+        const targetDocId = workProfile.docId ?? document.docId;
+        const sameDocProfile = workProfiles.find(profile =>
+            profile.docId === targetDocId || profile.googleDocUrl === workProfile.googleDocUrl);
+        const existingIds = new Set(workProfiles.map(profile => profile.id));
+        const baseId = sameDocProfile?.id || workProfile.id || document.docId || `work-${Date.now()}`;
+        let profileId = baseId;
+        while (!sameDocProfile && existingIds.has(profileId)) {
+            profileId = `${baseId}-${Math.floor(Math.random() * 1000)}`;
+        }
+
+        const hydratedProfile = normalizeWorkProfile({
+            ...workProfile,
+            id: profileId,
+            docId: workProfile.docId ?? document.docId,
+            outline: workProfile.outline ?? document.outline,
+            rawText: workProfile.rawText ?? document.plainText,
+            document,
+            lastSyncedAt: workProfile.lastSyncedAt ?? document.lastUpdated ?? new Date().toISOString(),
+            pageIds: workProfile.pageIds ?? [],
+        });
+
+        const timestamp = Date.now();
+        const draftPage: CanvasPage = {
+            id: `page-${timestamp}-draft`,
+            title: `Bản Nháp - ${hydratedProfile.title}`,
+            content: '# Bắt đầu viết bản nháp của bạn ở đây...\n\n',
+            position: { x: 100, y: 100 },
+            size: { width: 400, height: 300 },
+        };
+        const critiquePage: CanvasPage = {
+            id: `page-${timestamp + 1}-critique`,
+            title: `Đánh giá - ${hydratedProfile.title}`,
+            content: '# Nơi nhận các phân tích và góp ý từ AI.',
+            position: { x: 550, y: 100 },
+            size: { width: 400, height: 300 },
+        };
+        const finalPage: CanvasPage = {
+            id: `page-${timestamp + 2}-final`,
+            title: `Hoàn chỉnh - ${hydratedProfile.title}`,
+            content: '# Nơi chứa chương truyện đã được chau chuốt.',
+            position: { x: 1000, y: 100 },
+            size: { width: 400, height: 300 },
+        };
+
+        const profileWithPages: WorkProfile = {
+            ...hydratedProfile,
+            pageIds: [draftPage.id, critiquePage.id, finalPage.id],
+        };
+
+        const previousPageIds = sameDocProfile?.pageIds ?? [];
+        setPages(prev => [
+            ...prev.filter(page => !previousPageIds.includes(page.id)),
+            draftPage,
+            critiquePage,
+            finalPage,
+        ]);
+        setWorkProfiles(prev => [...prev.filter(profile => profile.id !== profileWithPages.id), profileWithPages]);
+        setSelectedProfileId(profileWithPages.id);
+
+        const introMessage = `Mình đã tải tài liệu "${document.title}" (${document.wordCount} từ).\n\nTóm tắt nhanh:\n${profileWithPages.summary}`;
+        setMessages(prev => [
+            ...prev,
+            {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant',
+                text: introMessage,
+            },
+        ]);
+
+        setTimeout(() => {
+            canvasRef.current?.focusOn(draftPage.id, 'page');
+        }, 200);
+    };
 
     // Load initial state from localStorage
     useEffect(() => {
@@ -47,11 +159,11 @@ const App: React.FC = () => {
 
             if (storedMessages) setMessages(JSON.parse(storedMessages));
             else {
-                 const initialWelcomeMessage: Message = {
+               const initialWelcomeMessage: Message = {
                     id: 'init',
                     role: 'assistant',
-                    text: "Chào mừng bạn đến với Studio Viết lách Couple AI! Để bắt đầu, hãy dán đường dẫn Google Doc của tác phẩm vào đây nhé. Mình sẽ phân tích và tạo không gian làm việc cho bạn."
-                };
+                    text: "Chào mừng bạn đến với Studio Viết lách Dei8 AI! Để bắt đầu, hãy dán đường dẫn Google Docs vào biểu mẫu 'Phân tích Google Docs' bên trái. Mình sẽ tải nội dung, phân tích và tạo không gian làm việc cho bạn."
+               };
                 setMessages([initialWelcomeMessage]);
             }
             if (storedPages) setPages(JSON.parse(storedPages));
@@ -59,8 +171,11 @@ const App: React.FC = () => {
 
             let profiles: WorkProfile[] = [];
             if (storedProfiles) {
-                profiles = JSON.parse(storedProfiles);
-                setWorkProfiles(profiles);
+               const parsedProfiles = JSON.parse(storedProfiles);
+                if (Array.isArray(parsedProfiles)) {
+                    profiles = parsedProfiles.map((profile: WorkProfile) => normalizeWorkProfile(profile));
+                    setWorkProfiles(profiles);
+                }
             }
             
             // Restore last selected session
@@ -116,10 +231,20 @@ const App: React.FC = () => {
         setInput('');
         setIsLoading(true);
 
-        const context = workProfiles.find(p => p.id === selectedProfileId)?.summary;
+       const activeProfile = workProfiles.find(p => p.id === selectedProfileId);
+        const context = activeProfile?.summary;
+        const documentContext: DocumentContextForAI | undefined = activeProfile && (activeProfile.rawText || activeProfile.document)
+            ? {
+                title: activeProfile.title,
+                summary: activeProfile.summary,
+                plainText: activeProfile.rawText ?? activeProfile.document?.plainText ?? '',
+                outline: activeProfile.outline ?? activeProfile.document?.outline,
+                wordCount: activeProfile.document?.wordCount ?? undefined,
+            }
+            : undefined;
 
         try {
-            const rawResponse = await generateResponse(trimmedInput, user, context);
+            const rawResponse = await generateResponse(trimmedInput, user, context, documentContext);
             
  const { userFacingText, actions } = parseModelActions(rawResponse);
             const assistantMessage: Message = {
@@ -135,14 +260,15 @@ const App: React.FC = () => {
             let pagesChanged = false;
             let profilesChanged = false;
             let selectedChanged = false;
-            let publishParams: ActionPayloads[ActionTag.PREPARE_PUBLICATION] | null = null;
+            let publishParamsLocal: PublishModalParams | null = null;
             let shouldOpenPublishModal = false;
             let focusPageId: string | null = null;
 
             actions.forEach(action => {
                 switch (action.type) {
                     case ActionTag.INGEST_DOC: {
-                        const { profile, pages: generatedPages } = createWorkProfileFromIngestAction(action.payload, trimmedInput);
+                        const ingestDocPayload = action.payload as ActionPayloads[ActionTag.INGEST_DOC];
+                        const { profile, pages: generatedPages } = createWorkProfileFromIngestAction(ingestDocPayload, trimmedInput);
                         updatedPages = [...updatedPages, ...generatedPages];
                         updatedWorkProfiles = [...updatedWorkProfiles, profile];
                         updatedSelectedProfileId = profile.id;
@@ -157,14 +283,15 @@ const App: React.FC = () => {
                             break;
                         }
                         const profileIds = updatedWorkProfiles.map(p => p.id);
-                        const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProfileId, action.payload.profileId);
+                        const critiquePagePayload = action.payload as ActionPayloads[ActionTag.CREATE_CRITIQUE_PAGE];
+const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProfileId, critiquePagePayload.profileId);
                         if (!targetProfileId) {
                             console.warn('Unable to determine a target profile for critique page.');
                             break;
                         }
                         const targetProfile = updatedWorkProfiles.find(p => p.id === targetProfileId);
                         const existingCount = targetProfile ? targetProfile.pageIds.length : 0;
-                        const newPage = createCritiquePageFromAction(action.payload, existingCount);
+                        const newPage = createCritiquePageFromAction(critiquePagePayload, existingCount);
                         updatedPages = [...updatedPages, newPage];
                         updatedWorkProfiles = updatedWorkProfiles.map(profile =>
                             profile.id === targetProfileId
@@ -180,8 +307,8 @@ const App: React.FC = () => {
                         profilesChanged = true;
                         break;
                     }
-                    case ActionTag.PREPARE_PUBLICATION: {
-                        publishParams = action.payload;
+                   case ActionTag.PREPARE_PUBLICATION: {
+                        publishParamsLocal = action.payload as PublishModalParams;
                         shouldOpenPublishModal = true;
                         break;
                     }
@@ -200,11 +327,10 @@ const App: React.FC = () => {
             if (selectedChanged) {
                 setSelectedProfileId(updatedSelectedProfileId);
             }
-            if (shouldOpenPublishModal && publishParams) {
-                setPublishingParams(publishParams);
+           if (shouldOpenPublishModal && publishParamsLocal) { 
+                setPublishingParams(publishParamsLocal);
                 setIsPublishingModalOpen(true);
             }
-
             if (focusPageId) {
                 const targetPageId = focusPageId;
                 setTimeout(() => {
@@ -258,9 +384,9 @@ const App: React.FC = () => {
             <aside className="w-80 flex-shrink-0 bg-slate-800 flex flex-col p-4">
                 <div className="flex items-center mb-6">
                     <BotIcon className="w-8 h-8 text-cyan-400 mr-2" />
-                    <h1 className="text-xl font-bold">Couple AI Studio</h1>
+                    <h1 className="text-xl font-bold">Dei8 AI Studio</h1>
                 </div>
-                
+                 <UploadDocForm onSuccess={handleDocumentImported} />
                 <div className="flex-grow overflow-y-auto scrollbar-thin flex flex-col">
                     <div>
                         <h2 className="text-sm font-semibold text-slate-400 my-2 uppercase">Dự án Truyện</h2>
