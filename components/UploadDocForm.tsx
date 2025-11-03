@@ -81,8 +81,8 @@ const UploadDocForm: React.FC<UploadDocFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white/80 border border-[rgba(119,134,103,0.25)] rounded-2xl p-4 mb-4 shadow-[0_15px_35px_rgba(95,111,83,0.16)] transition-all">
-      <label htmlFor="google-doc-url" className="block text-sm font-semibold text-[var(--accent-dark)] mb-2 tracking-wide uppercase">
+    <form onSubmit={handleSubmit} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 mb-4 shadow-[var(--shadow-md)] transition-all">
+      <label htmlFor="google-doc-url" className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 tracking-wide uppercase">
         Phân tích Google Docs
       </label>
       <div className="flex gap-2">
@@ -92,26 +92,26 @@ const UploadDocForm: React.FC<UploadDocFormProps> = ({ onSuccess }) => {
           placeholder="Dán URL Google Docs..."
           value={url}
           onChange={(event) => setUrl(event.target.value)}
-          className="flex-1 rounded-xl bg-white border border-[rgba(119,134,103,0.25)] text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text)] placeholder:text-[rgba(111,123,100,0.8)] transition-shadow"
+          className="flex-1 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] transition-all"
           disabled={status === 'loading'}
           required
         />
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] disabled:bg-[rgba(111,123,100,0.45)] text-white font-semibold px-4 py-2 rounded-xl shadow-[0_12px_30px_rgba(95,111,83,0.25)] disabled:shadow-none transition-colors duration-200"
+          className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--color-text-on-primary)] font-semibold px-4 py-2 rounded-xl shadow-[var(--shadow-lg)] disabled:shadow-none transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:scale-100"
         >
           {status === 'loading' ? 'Đang tải...' : 'Phân tích'}
         </button>
       </div>
       {status === 'loading' && (
-        <p className="text-xs text-[var(--text-muted)] mt-2">Đang truy vấn Google Docs, vui lòng chờ trong giây lát...</p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-2">Đang truy vấn Google Docs, vui lòng chờ trong giây lát...</p>
       )}
       {status === 'success' && (
-        <p className="text-xs text-[var(--accent-dark)] mt-2">Đã tải thành công! Hồ sơ tác phẩm đang được cập nhật.</p>
+        <p className="text-xs text-[var(--color-success)] mt-2">Đã tải thành công! Hồ sơ tác phẩm đang được cập nhật.</p>
       )}
       {status === 'error' && errorMessage && (
-        <p className="text-xs text-[#b35b4f] mt-2">{errorMessage}</p>
+        <p className="text-xs text-[var(--color-error)] mt-2">{errorMessage}</p>
       )}
     </form>
   );

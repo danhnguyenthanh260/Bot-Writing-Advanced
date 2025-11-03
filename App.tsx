@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import type { User, Message, CanvasPage, WorkProfile, GoogleDocIngestResponse, DocumentContextForAI } from './types';
+import React, { useState, useEffect, useRef, useCallback  } from 'react';
+import type { User, Message, CanvasPage, WorkProfile, GoogleDocIngestResponse, DocumentContextForAI, WorkspaceSnapshot  } from './types';
 import { generateResponse } from './services/geminiService';
 import { ActionTag, parseModelActions, type ActionPayloads } from './services/actionSchema';
 import { createCritiquePageFromAction, createWorkProfileFromIngestAction, ensureProfileAssociation } from './services/actionEffects';
-import { GoogleIcon, FileIcon, SendIcon, BotIcon, TrashIcon } from './components/icons';
+import { FileIcon, SendIcon, BotIcon, TrashIcon } from './components/icons';
 import DocumentCanvas, { type DocumentCanvasHandle } from './components/DocumentCanvas';
 import PublishModal from './components/PublishModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import UploadDocForm from './components/UploadDocForm';
+import GoogleSignInButton from './components/GoogleSignInButton';
+import ThemeToggle from './components/ThemeToggle';
+import ChatButton from './components/ChatButton';
+import { loginWithGoogle, fetchSession, logout } from './services/authService';
+import { saveWorkspace } from './services/workspaceService';
 
 const LOCAL_STORAGE_KEYS = {
     MESSAGES: 'couple_ai_writer_messages',
@@ -15,6 +20,16 @@ const LOCAL_STORAGE_KEYS = {
     CHAT_PAGE: 'couple_ai_writer_chat_page',
     WORK_PROFILES: 'couple_ai_writer_work_profiles',
     LAST_SELECTED_PROFILE: 'couple_ai_writer_last_profile',
+    SESSION_TOKEN: 'couple_ai_writer_session_token',
+    USER: 'couple_ai_writer_user',
+};
+
+const INITIAL_CHAT_PAGE: CanvasPage = {
+    id: 'chat-page',
+    title: 'Chat',
+    content: '',
+    position: { x: 950, y: 80 },
+    size: { width: 450, height: 600 },
 };
 
 const normalizeWorkProfile = (profile: WorkProfile): WorkProfile => {
@@ -51,10 +66,14 @@ const App: React.FC = () => {
     const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [input, setInput] = useState('');
-    
     const [pages, setPages] = useState<CanvasPage[]>([]);
-    const [chatPage, setChatPage] = useState<CanvasPage>({ id: 'chat-page', title: 'Chat', content: '', position: { x: 950, y: 80 }, size: { width: 450, height: 600 } });
-    
+    const [sessionToken, setSessionToken] = useState<string | null>(null);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
+    const [chatPage, setChatPage] = useState<CanvasPage>({...INITIAL_CHAT_PAGE });
+     const [isHydrated, setIsHydrated] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
     // State for the publishing modal
     const [isPublishingModalOpen, setIsPublishingModalOpen] = useState(false);
     type PublishModalParams = {
@@ -71,6 +90,16 @@ const [publishingParams, setPublishingParams] = useState<PublishModalParams | nu
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: 'profile' | 'page'; name: string; } | null>(null);
 
     const canvasRef = useRef<DocumentCanvasHandle>(null);
+ const workspaceSyncTimeout = useRef<number | undefined>(undefined);
+
+    const applyWorkspaceSnapshot = useCallback((snapshot: WorkspaceSnapshot) => {
+        setMessages(snapshot?.messages ?? []);
+        setPages(snapshot?.pages ?? []);
+        setChatPage(snapshot?.chatPage ? { ...snapshot.chatPage } : { ...INITIAL_CHAT_PAGE });
+        const normalizedProfiles = (snapshot?.workProfiles ?? []).map(profile => normalizeWorkProfile(profile));
+        setWorkProfiles(normalizedProfiles);
+        setSelectedProfileId(snapshot?.selectedProfileId ?? null);
+    }, []);
 
     const handleDocumentImported = (payload: GoogleDocIngestResponse) => {
         const { document, workProfile } = payload;
@@ -151,6 +180,17 @@ const [publishingParams, setPublishingParams] = useState<PublishModalParams | nu
     // Load initial state from localStorage
     useEffect(() => {
         try {
+              const storedUser = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
+            if (storedUser) {
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    if (parsedUser?.id && parsedUser?.name) {
+                        setUser(parsedUser);
+                    }
+                } catch (error) {
+                    console.error('Failed to parse stored user', error);
+                }
+            }
             const storedMessages = localStorage.getItem(LOCAL_STORAGE_KEYS.MESSAGES);
             const storedPages = localStorage.getItem(LOCAL_STORAGE_KEYS.PAGES);
             const storedChatPage = localStorage.getItem(LOCAL_STORAGE_KEYS.CHAT_PAGE);
@@ -183,11 +223,63 @@ const [publishingParams, setPublishingParams] = useState<PublishModalParams | nu
                 setSelectedProfileId(storedLastProfileId);
             }
 
-        } catch (error) { console.error("Failed to load state from localStorage", error); }
+       } catch (error) { console.error("Failed to load state from localStorage", error); }
+        finally {
+            setIsHydrated(true);
+        }
     }, []);
+
+     useEffect(() => {
+        const storedToken = localStorage.getItem(LOCAL_STORAGE_KEYS.SESSION_TOKEN);
+        if (!storedToken) {
+            return;
+        }
+
+        setIsAuthenticating(true);
+        setSessionToken(storedToken);
+        setAuthError(null);
+
+        fetchSession(storedToken)
+            .then(({ user: sessionUser, workspace }) => {
+                setUser(sessionUser);
+                if (workspace) {
+                    applyWorkspaceSnapshot(workspace);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to restore session', error);
+                setAuthError(error instanceof Error ? error.message : 'Không thể khôi phục phiên đăng nhập.');
+                setSessionToken(null);
+                setUser(null);
+                localStorage.removeItem(LOCAL_STORAGE_KEYS.SESSION_TOKEN);
+                localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+            })
+            .finally(() => {
+                setIsAuthenticating(false);
+            });
+    }, [applyWorkspaceSnapshot]);
+
+    useEffect(() => {
+        if (sessionToken) {
+            localStorage.setItem(LOCAL_STORAGE_KEYS.SESSION_TOKEN, sessionToken);
+        } else {
+            localStorage.removeItem(LOCAL_STORAGE_KEYS.SESSION_TOKEN);
+        }
+    }, [sessionToken]);
+
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
+        } else {
+            localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+        }
+    }, [user]);
 
     // Save state to localStorage on change
     useEffect(() => {
+        if (!isHydrated) {
+            return;
+        }
         try {
             localStorage.setItem(LOCAL_STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
             localStorage.setItem(LOCAL_STORAGE_KEYS.PAGES, JSON.stringify(pages));
@@ -200,6 +292,40 @@ const [publishingParams, setPublishingParams] = useState<PublishModalParams | nu
             }
         } catch (error) { console.error("Failed to save state to localStorage", error); }
     }, [messages, pages, chatPage, workProfiles, selectedProfileId]);
+
+     useEffect(() => {
+        if (!sessionToken) {
+            return;
+        }
+
+        const snapshot: WorkspaceSnapshot = {
+            messages,
+            pages,
+            chatPage,
+            workProfiles,
+            selectedProfileId,
+        };
+
+        const timeoutId = window.setTimeout(() => {
+            saveWorkspace(sessionToken, snapshot)
+                .then(() => {
+                    setAuthError(prev => (prev && prev.startsWith('Không thể đồng bộ workspace') ? null : prev));
+                })
+                .catch(error => {
+                    console.error('Failed to sync workspace to server', error);
+                    setAuthError('Không thể đồng bộ workspace lên máy chủ.');
+                });
+        }, 600);
+
+        workspaceSyncTimeout.current = timeoutId;
+
+        return () => {
+            window.clearTimeout(timeoutId);
+            if (workspaceSyncTimeout.current === timeoutId) {
+                workspaceSyncTimeout.current = undefined;
+            }
+        };
+    }, [messages, pages, chatPage, workProfiles, selectedProfileId, sessionToken]);
 
     // Auto-focus on Draft page when a profile is selected
     useEffect(() => {
@@ -217,7 +343,53 @@ const [publishingParams, setPublishingParams] = useState<PublishModalParams | nu
         }
     }, [selectedProfileId, workProfiles, pages]); // Reruns when selectedProfileId or data changes
 
-    const handleLogin = () => setUser({ name: "Tác giả", avatarUrl: `https://i.pravatar.cc/150?u=author` });
+     const handleGoogleCredential = useCallback(async (credential: string) => {
+        setIsAuthenticating(true);
+        setAuthError(null);
+        try {
+            const result = await loginWithGoogle(credential);
+            setUser(result.user);
+            setSessionToken(result.sessionToken);
+            if (result.workspace) {
+                applyWorkspaceSnapshot(result.workspace);
+            }
+        } catch (error) {
+            console.error('Google login failed', error);
+            setAuthError(error instanceof Error ? error.message : 'Đăng nhập Google thất bại.');
+        } finally {
+            setIsAuthenticating(false);
+        }
+    }, [applyWorkspaceSnapshot]);
+
+    const handleGoogleError = useCallback((message: string) => {
+        console.error(message);
+        setAuthError(message);
+    }, []);
+
+    const handleLogout = useCallback(async () => {
+        if (!sessionToken) {
+            setUser(null);
+            setAuthError(null);
+            return;
+        }
+
+        setIsAuthenticating(true);
+        try {
+            await logout(sessionToken);
+        } catch (error) {
+            console.error('Failed to logout', error);
+        } finally {
+            if (workspaceSyncTimeout.current !== undefined) {
+                window.clearTimeout(workspaceSyncTimeout.current);
+                workspaceSyncTimeout.current = undefined;
+            }
+            setSessionToken(null);
+            setUser(null);
+            setAuthError(null);
+            setIsAuthenticating(false);
+        }
+    }, [sessionToken]);
+
 
     const handleNavigateTo = (id: string, type: 'page' | 'chat') => canvasRef.current?.focusOn(id, type);
     
@@ -380,56 +552,56 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
     const visiblePages = selectedProfileId ? pages.filter(p => workProfiles.find(wp => wp.id === selectedProfileId)?.pageIds.includes(p.id)) : [];
 
     return (
-        <div className="flex h-full min-h-screen w-full overflow-hidden bg-[var(--background)] text-[var(--text)]">
-            <aside className="w-80 flex-shrink-0 bg-[var(--surface-strong)]/95 backdrop-blur-sm flex flex-col p-4 border-r border-[rgba(119,134,103,0.18)] shadow-[0_18px_45px_rgba(95,111,83,0.12)]">
+        <div className="flex h-screen w-screen overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)]">
+            <aside className="w-80 flex-shrink-0 bg-[var(--color-surface-strong)] backdrop-blur-sm flex flex-col p-4 border-r border-[var(--color-border)] shadow-[var(--shadow-md)] z-10">
                 <div className="flex items-center mb-6">
-                    <BotIcon className="w-8 h-8 text-[var(--accent)] mr-2" />
-                    <h1 className="text-xl font-semibold text-[var(--accent-dark)]">Dei8 AI Studio</h1>
+                    <BotIcon className="w-8 h-8 text-[var(--color-primary)] mr-2" />
+                    <h1 className="text-xl font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-serif)' }}>Dei8 AI Studio</h1>
                 </div>
                  <UploadDocForm onSuccess={handleDocumentImported} />
                 <div className="flex-grow overflow-y-auto scrollbar-thin flex flex-col">
                     <div>
-                        <h2 className="text-sm font-semibold text-[var(--text-muted)] my-2 uppercase tracking-wide">Dự án Truyện</h2>
+                        <h2 className="text-xs font-semibold text-[var(--color-text-muted)] my-2 uppercase tracking-wide">Dự án Truyện</h2>
                         {workProfiles.length > 0 ? (
                             <ul>{workProfiles.map(profile => (
                                 <li key={profile.id} className="group">
                                     <button
                                         onClick={() => setSelectedProfileId(profile.id)}
                                         className={`w-full text-left p-3 rounded-xl flex items-center justify-between transition-all duration-200 ${selectedProfileId === profile.id
-                                            ? 'bg-[var(--accent)] text-white shadow-[0_14px_35px_rgba(95,111,83,0.25)]'
-                                            : 'hover:bg-[var(--surface)] hover:shadow-[0_10px_30px_rgba(95,111,83,0.18)]'}`}
+                                            ? 'bg-[var(--color-primary)] text-[var(--color-text-on-primary)] shadow-[var(--shadow-lg)]'
+                                            : 'hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)]'}`}
                                     >
                                         <div className="flex items-center truncate">
-                                            <FileIcon className={`w-5 h-5 mr-3 flex-shrink-0 ${selectedProfileId === profile.id ? 'text-white' : 'text-[var(--accent-dark)]'}`} />
-                                            <span className={`truncate text-sm font-medium ${selectedProfileId === profile.id ? 'text-white' : ''}`}>{profile.title}</span>
+                                            <FileIcon className={`w-5 h-5 mr-3 flex-shrink-0 ${selectedProfileId === profile.id ? 'text-[var(--color-text-on-primary)]' : 'text-[var(--color-primary-dark)]'}`} />
+                                            <span className={`truncate text-sm font-medium ${selectedProfileId === profile.id ? 'text-[var(--color-text-on-primary)]' : 'text-[var(--color-text)]'}`}>{profile.title}</span>
                                         </div>
                                         <div
                                             onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: profile.id, type: 'profile', name: profile.title }); }}
-                                            className={`p-1 rounded-full transition-all duration-200 ${selectedProfileId === profile.id ? 'hover:bg-white/20' : 'hover:bg-[rgba(200,191,174,0.35)] opacity-0 group-hover:opacity-100'}`}
+                                            className={`p-1 rounded-full transition-all duration-200 ${selectedProfileId === profile.id ? 'hover:bg-white/20' : 'hover:bg-[var(--color-surface-hover)] opacity-0 group-hover:opacity-100'}`}
                                         >
-                                            <TrashIcon className={`w-4 h-4 ${selectedProfileId === profile.id ? 'text-white/80 hover:text-white' : 'text-[var(--text-muted)] hover:text-[#b35b4f]'}`} />
+                                            <TrashIcon className={`w-4 h-4 ${selectedProfileId === profile.id ? 'text-[var(--color-text-on-primary)]/80 hover:text-[var(--color-text-on-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-error)]'}`} />
                                         </div>
                                     </button>
                                 </li>
                             ))}</ul>
-                        ) : <p className="text-[var(--text-muted)] text-sm p-3">Chưa có dự án nào. Hãy bắt đầu bằng cách dán link Google Doc vào ô chat.</p>}
+                        ) : <p className="text-[var(--color-text-muted)] text-sm p-3">Chưa có dự án nào. Hãy bắt đầu bằng cách dán link Google Doc vào ô chat.</p>}
                     </div>
 
-                    <div className="mt-4 border-t border-[rgba(119,134,103,0.2)] pt-2 flex-grow">
-                        <h2 className="text-sm font-semibold text-[var(--text-muted)] my-2 uppercase tracking-wide">Workspace Navigation</h2>
-                         <button onClick={() => handleNavigateTo(chatPage.id, 'chat')} className="w-full text-left p-3 rounded-xl flex items-center text-[var(--accent)] font-semibold transition-all duration-200 hover:bg-[var(--surface)] hover:shadow-[0_10px_30px_rgba(95,111,83,0.18)]">
+                    <div className="mt-4 border-t border-[var(--color-divider)] pt-2 flex-grow">
+                        <h2 className="text-xs font-semibold text-[var(--color-text-muted)] my-2 uppercase tracking-wide">Workspace Navigation</h2>
+                         <button onClick={() => handleNavigateTo(chatPage.id, 'chat')} className="w-full text-left p-3 rounded-xl flex items-center text-[var(--color-primary)] font-semibold transition-all duration-200 hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)]">
                             <svg className="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h3v3.767L13.277 18H20c-1.103 0-2-.897 2-2V4c0-1.103-.897-2-2-2zm0 14h-7.277L9 18.233V16H4V4h16v12z"></path></svg>
                              Đi đến Chat
                         </button>
                         {visiblePages.map(page => (
                             <div key={page.id} className="text-sm group">
-                                <button onClick={() => handleNavigateTo(page.id, 'page')} className="w-full text-left p-3 rounded-xl flex items-center justify-between transition-all duration-200 hover:bg-[var(--surface)] hover:shadow-[0_10px_30px_rgba(95,111,83,0.18)]">
-                                   <span className="truncate font-medium">{page.title}</span>
+                                <button onClick={() => handleNavigateTo(page.id, 'page')} className="w-full text-left p-3 rounded-xl flex items-center justify-between transition-all duration-200 hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)]">
+                                   <span className="truncate font-medium text-[var(--color-text)]">{page.title}</span>
                                    <div
                                         onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: page.id, type: 'page', name: page.title }); }}
-                                        className="p-1 rounded-full hover:bg-[rgba(200,191,174,0.35)] opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="p-1 rounded-full hover:bg-[var(--color-surface-hover)] opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        <TrashIcon className="w-4 h-4 text-[var(--text-muted)] hover:text-[#b35b4f]" />
+                                        <TrashIcon className="w-4 h-4 text-[var(--color-text-muted)] hover:text-[var(--color-error)]" />
                                     </div>
                                 </button>
                             </div>
@@ -437,9 +609,50 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
                     </div>
                 </div>
             </aside>
-            <main className="flex-1 flex flex-col bg-[var(--surface)]/85 backdrop-blur-sm overflow-hidden">
-                <header className="flex items-center justify-end p-4 bg-[var(--surface-strong)]/80 border-b border-[rgba(119,134,103,0.2)] shadow-[0_8px_25px_rgba(95,111,83,0.08)]">
-                    {user ? <div className="flex items-center"><span className="mr-3 font-medium text-[var(--accent-dark)]">{user.name}</span><img src={user.avatarUrl} alt="User Avatar" className="w-10 h-10 rounded-full border border-[rgba(119,134,103,0.35)]" /></div> : <button onClick={handleLogin} className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] text-white font-semibold py-2 px-4 rounded-xl flex items-center shadow-[0_12px_30px_rgba(95,111,83,0.25)] transition-colors duration-200"><GoogleIcon className="w-5 h-5 mr-2" /> Đăng nhập</button>}
+            <main className="flex-1 flex flex-col bg-[var(--color-bg)] overflow-hidden min-w-0">
+                <header className="flex items-center justify-between p-4 bg-[var(--color-surface-strong)] backdrop-blur-sm border-b border-[var(--color-border)] shadow-[var(--shadow-sm)] z-20 flex-shrink-0">
+                    <ThemeToggle />
+                    {user ? (
+                        <div className="flex flex-col items-end space-y-2">
+                            <div className="flex items-center space-x-4">
+                                <div className="flex items-center">
+                                    {user.avatarUrl ? (
+                                        <img
+                                            src={user.avatarUrl}
+                                            alt="User Avatar"
+                                            className="w-10 h-10 rounded-full border border-[rgba(119,134,103,0.35)] object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-[var(--color-primary)] text-[var(--color-text-on-primary)] flex items-center justify-center font-semibold">
+                                            {user.name?.charAt(0)?.toUpperCase() ?? 'A'}
+                                        </div>
+                                    )}
+                                    <div className="ml-3 text-right">
+                                        <span className="block font-medium text-[var(--color-primary-dark)] leading-tight">{user.name}</span>
+                                        {user.email ? <span className="block text-xs text-[var(--color-text-muted)]">{user.email}</span> : null}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    disabled={isAuthenticating}
+                                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--color-text-on-primary)] font-semibold py-2 px-4 rounded-xl shadow-[var(--shadow-lg)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:shadow-none disabled:scale-100"
+                                >
+                                    Đăng xuất
+                                </button>
+                            </div>
+                            {authError ? <p className="text-xs text-[var(--color-error)] max-w-xs text-right">{authError}</p> : null}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-end space-y-2">
+                            <GoogleSignInButton
+                                disabled={isAuthenticating}
+                                onCredential={handleGoogleCredential}
+                                onError={handleGoogleError}
+                                className="shadow-[var(--shadow-lg)] rounded-xl overflow-hidden"
+                            />
+                            {authError ? <p className="text-xs text-[var(--color-error)] max-w-xs text-right">{authError}</p> : null}
+                        </div>
+                    )}
                 </header>
                     <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
                     <div className="flex-1 min-h-0 overflow-hidden">
@@ -450,16 +663,31 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
                             messages={messages}
                             chatPage={chatPage}
                             setChatPage={setChatPage}
+                            isChatOpen={isChatOpen}
+                            onChatClose={() => setIsChatOpen(false)}
                         />
                     </div>
                      <div className="absolute bottom-0 left-0 right-0 p-6 z-30 pointer-events-none">
-                        <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-md border border-[rgba(119,134,103,0.18)] rounded-2xl p-3 flex items-center shadow-[0_25px_60px_rgba(95,111,83,0.22)] pointer-events-auto transition-all">
-                             <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(input); } }} placeholder="Dán link Google Doc hoặc trò chuyện với Trợ lý Biên tập..." className="flex-1 bg-transparent focus:outline-none p-2 resize-none text-[var(--text)] placeholder:text-[rgba(111,123,100,0.8)]" rows={1} disabled={isLoading} />
-                            <button onClick={() => handleSendMessage(input)} disabled={isLoading || !input.trim()} className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] disabled:bg-[rgba(111,123,100,0.45)] text-white p-2 rounded-xl transition-colors duration-200 shadow-[0_12px_30px_rgba(95,111,83,0.25)] disabled:shadow-none"><SendIcon className="w-6 h-6" /></button>
+                        <div className="max-w-4xl mx-auto bg-[var(--color-surface)] backdrop-blur-md border border-[var(--color-border)] rounded-2xl p-3 flex items-center shadow-[var(--shadow-xl)] pointer-events-auto transition-all">
+                             <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(input); } }} placeholder="Dán link Google Doc hoặc trò chuyện với Trợ lý Biên tập..." className="flex-1 bg-transparent focus:outline-none p-2 resize-none text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)]" rows={1} disabled={isLoading} style={{ fontFamily: 'var(--font-sans)' }} />
+                            <button onClick={() => handleSendMessage(input)} disabled={isLoading || !input.trim()} className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--color-text-on-primary)] p-2 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-[var(--shadow-lg)] disabled:shadow-none disabled:scale-100"><SendIcon className="w-6 h-6" /></button>
                         </div>
                     </div>
                 </div>
             </main>
+            
+            {/* Chat Toggle Button - Only show when chat is closed */}
+            <ChatButton 
+                onClick={() => {
+                    setIsChatOpen(true);
+                    // Focus on chat when opening
+                    setTimeout(() => {
+                        canvasRef.current?.focusOn(chatPage.id, 'chat');
+                    }, 100);
+                }}
+                isOpen={isChatOpen}
+                unreadCount={0} // TODO: Calculate unread messages
+            />
             
             <PublishModal
                 isOpen={isPublishingModalOpen}

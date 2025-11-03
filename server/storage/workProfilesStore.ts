@@ -1,5 +1,5 @@
 
-import type { StoredWorkProfile } from '../types';
+import type { StoredWorkProfile } from '../types.ts';
 
 class WorkProfilesStore {
   private profiles = new Map<string, StoredWorkProfile>();

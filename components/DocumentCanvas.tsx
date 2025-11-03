@@ -15,10 +15,12 @@ interface DocumentCanvasProps {
     messages: Message[];
     chatPage: CanvasPage;
     setChatPage: React.Dispatch<React.SetStateAction<CanvasPage>>;
+    isChatOpen?: boolean;
+    onChatClose?: () => void;
 }
 
 const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
-    ({ pages, setPages, messages, chatPage, setChatPage }, ref) => {
+    ({ pages, setPages, messages, chatPage, setChatPage, isChatOpen = false, onChatClose }, ref) => {
 
         const transformComponentRef = useRef(null);
 
@@ -47,26 +49,26 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
         const handleDragStop = (id: string, d: any) => {
             if (id === chatPage.id) {
                 setChatPage(prev => ({ ...prev, position: { x: d.x, y: d.y } }));
-            } else {
-                setPages(pages.map(p => p.id === id ? { ...p, position: { x: d.x, y: d.y } } : p));
+             } else {
+                setPages(prev => prev.map(p => p.id === id ? { ...p, position: { x: d.x, y: d.y } } : p));
             }
         };
 
         const handleResizeStop = (id: string, ref: HTMLElement, position: any) => {
-             if (id === chatPage.id) {
+            if (id === chatPage.id) {
                 const newSize = { width: ref.offsetWidth, height: ref.offsetHeight };
                 setChatPage(prev => ({ ...prev, size: newSize, position }));
             } else {
                 // For pages, only update width. Height is auto.
                 const newWidth = ref.offsetWidth;
-                setPages(pages.map(p => p.id === id ? { ...p, size: { ...p.size, width: newWidth }, position } : p));
+                setPages(prev => prev.map(p => p.id === id ? { ...p, size: { ...p.size, width: newWidth }, position } : p));
                 // Ensure RND component respects the auto height from content after resize
                 ref.style.height = 'auto';
             }
         };
         
       return (
-            <div className="w-full h-full overflow-hidden bg-[var(--background)] bg-[radial-gradient(circle_at_top,_rgba(119,134,103,0.15),transparent_55%)] [background-size:480px_480px]">
+            <div className="w-full h-full overflow-hidden bg-[var(--color-bg)]">
                 <TransformWrapper
                     ref={transformComponentRef}
                     initialScale={1}
@@ -90,7 +92,7 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                     onResizeStop={(e, direction, ref, delta, position) => handleResizeStop(page.id, ref, position)}
                                     minWidth={200}
                                     bounds="parent"
-                                    className="rounded-2xl overflow-hidden border border-[rgba(119,134,103,0.28)] bg-white/95 shadow-[0_25px_60px_rgba(95,111,83,0.16)] backdrop-blur-sm transition-all duration-200 hover:shadow-[0_28px_70px_rgba(95,111,83,0.22)]"
+                                    className="rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lg)] backdrop-blur-sm transition-all duration-200 hover:shadow-[var(--shadow-xl)] hover:-translate-y-0.5"
                                     dragHandleClassName="handle"
                                     enableResizing={{
                                         top: false,
@@ -104,11 +106,42 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                     }}
                                 >
                                     <div className="flex flex-col h-full">
-                                        <div className="p-4 bg-[var(--accent)]/90 text-white font-semibold cursor-move handle flex items-center justify-between">
+                                        <div 
+                                            className="px-4 py-3 bg-[var(--color-primary)] text-[var(--color-text-on-primary)] font-semibold cursor-move handle flex items-center justify-between"
+                                            style={{ 
+                                                fontFamily: 'var(--font-serif)',
+                                                fontSize: 'var(--text-xl)',
+                                                letterSpacing: 'var(--tracking-tight)'
+                                            }}
+                                        >
                                             {page.title}
                                         </div>
-                                        {/* FIX: The `className` prop is not valid on `ReactMarkdown`. Moved prose classes to the parent div. */}
-                                        <div className="p-4 flex-1 prose prose-sm max-w-none text-[var(--text)] prose-headings:text-[var(--accent-dark)] prose-a:text-[var(--accent)]">
+                                        <div 
+                                            className="px-6 py-6 flex-1 prose prose-sm max-w-none"
+                                            style={{
+                                                fontFamily: 'var(--font-sans)',
+                                                fontSize: 'var(--text-base)',
+                                                lineHeight: 'var(--leading-relaxed)',
+                                                color: 'var(--color-text)',
+                                                maxWidth: '65ch'
+                                            }}
+                                        >
+                                            <style>{`
+                                                .prose h1, .prose h2, .prose h3 {
+                                                    font-family: var(--font-serif);
+                                                    color: var(--color-text);
+                                                    font-weight: var(--font-semibold);
+                                                }
+                                                .prose h1 { font-size: var(--text-2xl); margin-top: 1.5em; margin-bottom: 0.75em; }
+                                                .prose h2 { font-size: var(--text-xl); margin-top: 1.25em; margin-bottom: 0.5em; }
+                                                .prose h3 { font-size: var(--text-lg); margin-top: 1em; margin-bottom: 0.5em; }
+                                                .prose p { margin-top: 1em; margin-bottom: 1.5em; }
+                                                .prose a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
+                                                .prose a:hover { color: var(--color-primary-dark); }
+                                                .prose code { font-family: var(--font-mono); background-color: var(--color-bg-soft); padding: 0.125em 0.375em; border-radius: 0.25rem; }
+                                                .prose pre { background-color: var(--color-bg-soft); padding: 1em; border-radius: 0.5rem; overflow-x: auto; }
+                                                .prose blockquote { border-left: 4px solid var(--color-primary); padding-left: 1em; font-style: italic; color: var(--color-text-muted); }
+                                            `}</style>
                                             <ReactMarkdown>
                                                 {page.content}
                                             </ReactMarkdown>
@@ -117,21 +150,23 @@ const DocumentCanvas = forwardRef<DocumentCanvasHandle, DocumentCanvasProps>(
                                 </Rnd>
                             ))}
 
-                            {/* Render Chat Widget */}
-                            <Rnd
-                                key={chatPage.id}
-                                size={{ width: chatPage.size.width, height: chatPage.size.height }}
-                                position={{ x: chatPage.position.x, y: chatPage.position.y }}
-                                onDragStop={(e, d) => handleDragStop(chatPage.id, d)}
-                                onResizeStop={(e, direction, ref, delta, position) => handleResizeStop(chatPage.id, ref, position)}
-                                minWidth={300}
-                                minHeight={400}
-                                bounds="parent"
-                                className="rounded-2xl overflow-hidden border border-[var(--accent)] shadow-[0_25px_60px_rgba(95,111,83,0.22)] backdrop-blur-sm"
-                                dragHandleClassName="handle"
-                            >
-                                <ChatWidget messages={messages} />
-                            </Rnd>
+                            {/* Render Chat Widget - Only when isChatOpen */}
+                            {isChatOpen && (
+                                <Rnd
+                                    key={chatPage.id}
+                                    size={{ width: chatPage.size.width, height: chatPage.size.height }}
+                                    position={{ x: chatPage.position.x, y: chatPage.position.y }}
+                                    onDragStop={(e, d) => handleDragStop(chatPage.id, d)}
+                                    onResizeStop={(e, direction, ref, delta, position) => handleResizeStop(chatPage.id, ref, position)}
+                                    minWidth={300}
+                                    minHeight={400}
+                                    bounds="parent"
+                                    className="rounded-2xl overflow-hidden border border-[var(--color-primary)] shadow-[var(--shadow-xl)] backdrop-blur-sm"
+                                    dragHandleClassName="handle"
+                                >
+                                    <ChatWidget messages={messages} onClose={onChatClose} />
+                                </Rnd>
+                            )}
                         </div>
                     </TransformComponent>
                 </TransformWrapper>

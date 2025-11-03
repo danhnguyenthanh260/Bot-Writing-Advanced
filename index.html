@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,47 +7,281 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
    <style>
     :root {
-      --accent: #778667;
-      --accent-dark: #5f6f53;
-      --accent-light: #92a67d;
-      --background: #d9e6ca;
-      --background-soft: #ecf4dc;
-      --surface: #f5f9eb;
-      --surface-strong: #eef4e1;
-      --text: #354030;
-      --text-muted: #6f7b64;
-      --neutral-soft: #c8bfae;
+      /* Font Families */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      --font-serif: 'Cormorant Garamond', 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+
+      /* Typography Scale */
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.25rem;
+      --text-2xl: 1.5rem;
+      --text-3xl: 1.875rem;
+      --text-4xl: 2.25rem;
+
+      --leading-tight: 1.25;
+      --leading-normal: 1.5;
+      --leading-relaxed: 1.75;
+      --leading-loose: 2.0;
+
+      --tracking-tight: -0.02em;
+      --tracking-normal: 0em;
+      --tracking-wide: 0.05em;
+
+      --font-light: 300;
+      --font-normal: 400;
+      --font-medium: 500;
+      --font-semibold: 600;
+      --font-bold: 700;
+
+      /* Light Mode Colors - Primary Palette */
+      --color-primary: #8B6F47;
+      --color-primary-dark: #6B5435;
+      --color-primary-light: #A0825F;
+      --color-primary-subtle: #D4C4B0;
+      --color-primary-bg: #F5F0EA;
+
+      /* Light Mode - Background & Surface */
+      --color-bg: #FBF9F6;
+      --color-bg-soft: #F5F3EF;
+      --color-surface: #FFFFFF;
+      --color-surface-strong: #F8F6F2;
+      --color-surface-hover: #FDFCF9;
+
+      /* Light Mode - Text */
+      --color-text: #2C2416;
+      --color-text-muted: #6B6054;
+      --color-text-subtle: #9A8F82;
+      --color-text-on-primary: #FFFFFF;
+
+      /* Light Mode - Borders */
+      --color-border: rgba(139, 111, 71, 0.12);
+      --color-border-strong: rgba(139, 111, 71, 0.20);
+      --color-border-subtle: rgba(139, 111, 71, 0.08);
+      --color-divider: rgba(107, 96, 84, 0.15);
+
+      /* Light Mode - Shadows */
+      --shadow-xs: 0 1px 2px 0 rgba(139, 111, 71, 0.05);
+      --shadow-sm: 0 2px 4px 0 rgba(139, 111, 71, 0.06), 0 1px 2px 0 rgba(139, 111, 71, 0.04);
+      --shadow-md: 0 4px 8px -2px rgba(139, 111, 71, 0.08), 0 2px 4px -1px rgba(139, 111, 71, 0.05);
+      --shadow-lg: 0 12px 24px -4px rgba(139, 111, 71, 0.12), 0 4px 8px -2px rgba(139, 111, 71, 0.08);
+      --shadow-xl: 0 20px 40px -8px rgba(139, 111, 71, 0.15), 0 8px 16px -4px rgba(139, 111, 71, 0.10);
+      --shadow-2xl: 0 32px 64px -12px rgba(139, 111, 71, 0.18), 0 12px 24px -4px rgba(139, 111, 71, 0.12);
+
+      /* Light Mode - Overlays */
+      --color-overlay: rgba(44, 36, 22, 0.45);
+      --color-overlay-light: rgba(44, 36, 22, 0.25);
+
+      /* Light Mode - Semantic Colors */
+      --color-success: #7A9471;
+      --color-success-light: #9FB89A;
+      --color-success-dark: #5F7560;
+      --color-warning: #D4A574;
+      --color-warning-light: #E6C199;
+      --color-warning-dark: #B8935F;
+      --color-error: #C97D60;
+      --color-error-light: #E0A890;
+      --color-error-dark: #B3694D;
+      --color-info: #8B9FB8;
+      --color-info-light: #B8C8D9;
+      --color-info-dark: #6B7F98;
+
+      /* Legacy Support (for gradual migration) */
+      --accent: var(--color-primary);
+      --accent-dark: var(--color-primary-dark);
+      --accent-light: var(--color-primary-light);
+      --background: var(--color-bg);
+      --background-soft: var(--color-bg-soft);
+      --surface: var(--color-surface);
+      --surface-strong: var(--color-surface-strong);
+      --text: var(--color-text);
+      --text-muted: var(--color-text-muted);
+      --neutral-soft: var(--color-primary-subtle);
     }
+
+    /* Dark Mode */
+    [data-theme="dark"] {
+      /* Dark Mode - Primary Palette */
+      --color-primary: #D4A574;
+      --color-primary-dark: #B8935F;
+      --color-primary-light: #E6C199;
+      --color-primary-subtle: rgba(212, 165, 116, 0.15);
+
+      /* Dark Mode - Background & Surface */
+      --color-bg: #1A1816;
+      --color-bg-soft: #25221F;
+      --color-surface: #2E2B27;
+      --color-surface-strong: #35322D;
+      --color-surface-hover: #383530;
+
+      /* Dark Mode - Text */
+      --color-text: #F5F3EF;
+      --color-text-muted: #C9C4BB;
+      --color-text-subtle: #9A958D;
+      --color-text-on-primary: #1A1816;
+
+      /* Dark Mode - Borders */
+      --color-border: rgba(212, 165, 116, 0.15);
+      --color-border-strong: rgba(212, 165, 116, 0.25);
+      --color-border-subtle: rgba(212, 165, 116, 0.08);
+      --color-divider: rgba(201, 196, 187, 0.15);
+
+      /* Dark Mode - Shadows */
+      --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.35), 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.45), 0 4px 8px -2px rgba(0, 0, 0, 0.35);
+      --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.5), 0 8px 16px -4px rgba(0, 0, 0, 0.4);
+      --shadow-2xl: 0 32px 64px -12px rgba(0, 0, 0, 0.55), 0 12px 24px -4px rgba(0, 0, 0, 0.45);
+
+      /* Dark Mode - Overlays */
+      --color-overlay: rgba(0, 0, 0, 0.65);
+      --color-overlay-light: rgba(0, 0, 0, 0.45);
+
+      /* Dark Mode - Semantic Colors */
+      --color-success: #8FAC89;
+      --color-success-light: #A8C5A2;
+      --color-success-dark: #72856D;
+      --color-warning: #E6C199;
+      --color-warning-light: #F0D4B4;
+      --color-warning-dark: #D4A574;
+      --color-error: #E0A890;
+      --color-error-light: #F0C4B0;
+      --color-error-dark: #D4967A;
+      --color-info: #9FB4CE;
+      --color-info-light: #B8CEE3;
+      --color-info-dark: #8B9FB8;
+
+      /* Legacy Support */
+      --accent: var(--color-primary);
+      --accent-dark: var(--color-primary-dark);
+      --accent-light: var(--color-primary-light);
+      --background: var(--color-bg);
+      --background-soft: var(--color-bg-soft);
+      --surface: var(--color-surface);
+      --surface-strong: var(--color-surface-strong);
+      --text: var(--color-text);
+      --text-muted: var(--color-text-muted);
+    }
+
+    /* Spacing Scale */
+    --space-0: 0;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* Z-Index */
+    --z-base: 0;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-overlay: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-tooltip: 700;
+    --z-notification: 800;
+
     html, body, #root {
       height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
     }
+
     body {
       margin: 0;
       overflow: hidden;
-      font-family: 'Be Vietnam Pro', sans-serif;
-      color: var(--text);
-      background-color: var(--background);
-      background-image: radial-gradient(circle at top left, rgba(119, 134, 103, 0.16), transparent 45%),
-        radial-gradient(circle at bottom right, rgba(136, 157, 115, 0.18), transparent 50%);
+      font-family: var(--font-sans);
+      color: var(--color-text);
+      background-color: var(--color-bg);
+      transition: background-color 300ms ease-out, color 300ms ease-out;
+    }
+
+    [data-theme="light"] body {
+      background-image: radial-gradient(circle at top left, rgba(139, 111, 71, 0.08), transparent 45%),
+        radial-gradient(circle at bottom right, rgba(160, 130, 95, 0.06), transparent 50%);
       background-attachment: fixed;
     }
+
+    [data-theme="dark"] body {
+      background-image: radial-gradient(circle at top left, rgba(212, 165, 116, 0.05), transparent 45%),
+        radial-gradient(circle at bottom right, rgba(184, 147, 95, 0.03), transparent 50%);
+      background-attachment: fixed;
+    }
+
     .scrollbar-thin {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(95, 111, 83, 0.8) rgba(233, 242, 219, 0.7);
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-primary) transparent;
+      transition: scrollbar-color 300ms ease-out;
     }
+
+    [data-theme="light"] .scrollbar-thin {
+      scrollbar-color: rgba(139, 111, 71, 0.6) rgba(248, 246, 242, 0.7);
+    }
+
+    [data-theme="dark"] .scrollbar-thin {
+      scrollbar-color: rgba(212, 165, 116, 0.6) rgba(53, 50, 45, 0.7);
+    }
+
     .scrollbar-thin::-webkit-scrollbar {
-        width: 8px;
+      width: 8px;
     }
+
     .scrollbar-thin::-webkit-scrollbar-track {
-        background: rgba(222, 233, 204, 0.9);
+      background: var(--color-surface-strong);
+      transition: background-color 300ms ease-out;
     }
+
     .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: rgba(95, 111, 83, 0.8);
-        border-radius: 4px;
-        border: 2px solid rgba(233, 242, 219, 0.9);
+      background-color: var(--color-primary);
+      border-radius: 4px;
+      opacity: 0.6;
+      transition: opacity 300ms ease-out;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      opacity: 0.8;
+    }
+
+    /* Smooth transitions for theme changes */
+    * {
+      transition: background-color 300ms ease-out, 
+                  color 300ms ease-out,
+                  border-color 300ms ease-out,
+                  box-shadow 300ms ease-out;
+    }
+
+    /* Exclude transitions for certain elements */
+    button, a, input, textarea, select {
+      transition: background-color 150ms ease-out,
+                  color 150ms ease-out,
+                  border-color 150ms ease-out,
+                  box-shadow 150ms ease-out,
+                  transform 150ms ease-out;
     }
   </style>
 <script type="importmap">

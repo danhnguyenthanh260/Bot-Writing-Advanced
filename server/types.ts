@@ -1,4 +1,4 @@
-import type { StructuredGoogleDoc, WorkProfile } from '../types';
+import type { StructuredGoogleDoc, WorkProfile } from '../types.ts';
 
 export interface StoredWorkProfile extends WorkProfile {
   createdAt: string;

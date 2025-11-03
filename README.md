@@ -14,7 +14,7 @@ The latest release introduces a secure backend proxy around the Google Docs API.
 * **⚡️ Efficient Updates:** Re-ingesting the same document refreshes the stored profile and workspace without duplicating pages.
 * **🎨 Dynamic Workspace Canvas:** The infinite canvas still provides dedicated Draft, Critique, and Final pages for each story with pan/zoom controls.
 * **🤖 Automated Publishing:** Ask the assistant to publish and it prepares the payload for the target platform (simulation ready).
-* **💾 Persistent State:** Messages, work profiles, and canvas pages are stored in `localStorage` so your studio survives refreshes.
+* **💾 Persistent State:** Messages, work profiles, and canvas pages are stored in `localStorage` so your studio survives refreshes. Logged-in users also sync their workspace to the server, which now persists sessions and snapshots in PostgreSQL for seamless restores across restarts or multiple backend instances.
 
 ## 🧠 How the Pipeline Works
 
@@ -25,13 +25,17 @@ The latest release introduces a secure backend proxy around the Google Docs API.
 5. **Frontend Hydration:** The response hydrates a `WorkProfile` in React, spawns Draft/Critique/Final canvas pages, and posts an assistant summary message.
 6. **Context-Aware Chat:** `services/geminiService.ts` now injects document outlines and truncated manuscript text when sending prompts to Gemini, ensuring critiques reference the real story instead of a bare URL.
 
+## 🗄️ Workspace Storage & Sessions
+
+Google-authenticated users receive a short-lived session token managed by `server/storage/sessionStore.ts`. Sessions and workspace snapshots are stored in PostgreSQL tables (`sessions` and `workspaces`) through a connection pool declared in `server/storage/postgres.ts`. On startup the server auto-creates the required tables if they are missing, ensuring workspaces survive server restarts and can be restored consistently across multiple backend instances.
+
 ## 💻 Tech Stack
 
 * **Frontend:** React 19, TypeScript, Vite, Tailwind-style utility classes.
 * **Backend:** Express 4 (TypeScript), Google APIs Node client, CORS middleware.
 * **AI Model:** Google Gemini API (`@google/genai`).
 * **Document Ingestion:** Google Docs API via OAuth 2.0 or Service Accounts.
-* **State Persistence:** Browser `localStorage` for client-side data; in-memory store for the API proxy.
+** **State Persistence:** Browser `localStorage` for client-side data; PostgreSQL for authenticated sessions and workspace snapshots on the API proxy.proxy.
 
 ## 🧰 Environment Configuration
 
@@ -44,10 +48,12 @@ The latest release introduces a secure backend proxy around the Google Docs API.
 | `GOOGLE_REDIRECT_URI` | Backend | Redirect URI used when minting the refresh token. Optional for service accounts.
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Backend | Service account email (alternative auth path).
 | `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | Backend | Service account private key. Remember to replace literal `\n` with real newlines.
+| `DATABASE_URL` | Backend | PostgreSQL connection string used for sessions and workspace snapshots (e.g., `postgres://user:pass@host:5432/db`). |
+| `DATABASE_SSL` | Backend | Optional (`true` to enable `ssl` with `rejectUnauthorized: false`). Use when your provider requires TLS. |
 | `PORT` | Backend | Port for the Express server (default `3001`).
-| `CORS_ORIGIN` | Backend | Comma-separated list of allowed origins for CORS (e.g., `http://localhost:5173`).
+| `CORS_ORIGIN` | Backend | Comma-separated list of allowed origins for CORS (e.g., `http://localhost:5173`). Leave blank to allow all (blank entries are ignored).
 | `VITE_API_BASE_URL` | Frontend | Base URL for API calls (e.g., `http://localhost:3001`). Leave blank when serving from the same origin.
-
+| `VITE_GOOGLE_CLIENT_ID` | Frontend | OAuth 2.0 client ID used by Google Identity Services on the frontend.
 > **Authentication Options:** Provide either the OAuth fields (`GOOGLE_CLIENT_*` + `GOOGLE_REFRESH_TOKEN`) or the service account fields. If both are present, the service account takes precedence.
 
 ## 🔑 Setting Up Google Cloud Credentials
@@ -73,12 +79,14 @@ The latest release introduces a secure backend proxy around the Google Docs API.
    ```
    > If your environment blocks certain packages, ensure whitelisting for `googleapis`, `express`, and related `@types` packages.
 2. **Create environment files:**
-   * Backend (`.env` or shell exports): set Google credentials, `API_KEY`, `PORT`, and `CORS_ORIGIN`.
+   * Backend (`.env` or shell exports): set Google credentials, `API_KEY`, `PORT`, `CORS_ORIGIN`, and the PostgreSQL settings `DATABASE_URL` (and `DATABASE_SSL=true` if your provider enforces TLS)..
    * Frontend (`.env.local`): set `VITE_API_BASE_URL` to `http://localhost:3001` (or empty if proxied) and `API_KEY`.
 3. **Start the backend proxy:**
    ```bash
    npm run server
    ```
+
+    > The server will initialize the PostgreSQL schema on startup if the target database is empty.
 4. **Start the Vite dev server:**
    ```bash
    npm run dev
@@ -107,11 +115,15 @@ The latest release introduces a secure backend proxy around the Google Docs API.
 │   ├── index.ts
 │   ├── routes/
 │   │   └── googleDocs.ts
+│   │   ├── auth.ts
+│   │   ├── googleDocs.ts
+│   │   └── workspace.ts
 │   └── storage/
+│       ├── postgres.ts
+│       ├── sessionStore.ts
 │       └── workProfilesStore.ts
 ├── types.ts
 └── ...
-```
 
 ## 📞 Support & Contributions
 

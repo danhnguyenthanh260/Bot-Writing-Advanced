@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import googleDocsService, { convertGoogleDocToWorkProfile } from '../../services/googleDocsService';
-import { workProfilesStore } from '../storage/workProfilesStore';
-import type { GoogleDocIngestPayload } from '../types';
+import googleDocsService, { convertGoogleDocToWorkProfile } from '../../services/googleDocsService.ts';
+import { workProfilesStore } from '../storage/workProfilesStore.ts';
+import type { GoogleDocIngestPayload } from '../types.ts';
 
 const router = Router();
 

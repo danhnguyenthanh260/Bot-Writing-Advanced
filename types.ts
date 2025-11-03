@@ -1,6 +1,7 @@
 export interface User {
   name: string;
   avatarUrl: string;
+  email?: string;
 }
 
 export interface Message {
@@ -64,4 +65,12 @@ export interface GoogleDocIngestResponse {
   docId: string;
   document: StructuredGoogleDoc;
   workProfile: WorkProfile;
+}
+
+export interface WorkspaceSnapshot {
+  messages: Message[];
+  pages: CanvasPage[];
+  chatPage: CanvasPage;
+  workProfiles: WorkProfile[];
+  selectedProfileId: string | null;
 }

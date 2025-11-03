@@ -1,14 +1,19 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { type ErrorRequestHandler } from 'express';
 import cors from 'cors';
-import googleDocsRouter from './routes/googleDocs';
+import googleDocsRouter from './routes/googleDocs.ts';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
 
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : undefined;
+const parsedOrigins = process.env.CORS_ORIGIN
+  ?.split(',')
+  .map(origin => origin.trim())
+  .filter(origin => origin.length > 0);
 
+const allowedOrigins = parsedOrigins && parsedOrigins.length > 0 ? parsedOrigins : undefined;
 app.use(
   cors({
     origin: allowedOrigins ?? true,

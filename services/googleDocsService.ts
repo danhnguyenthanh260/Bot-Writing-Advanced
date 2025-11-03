@@ -1,6 +1,6 @@
 import { google, docs_v1 } from 'googleapis';
 import type { OAuth2Client, JWT } from 'google-auth-library';
-import type { StructuredGoogleDoc, WorkProfile } from '../types';
+import type { StructuredGoogleDoc, WorkProfile } from '../types.ts';
 
 const DOCS_SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 
