@@ -1,7 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import type { DocumentContextForAI, User } from '../types';
+import { getContextForQuery } from '../server/services/contextRetrievalService'; // ✅ THÊM
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize AI only if API key is available
+const apiKey = process.env.API_KEY || process.env.VITE_API_KEY;
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const isOfflineMode = !apiKey || process.env.OFFLINE_MODE === 'true';
 
 const SYSTEM_INSTRUCTION = `// SYSTEM DIRECTIVE: Couple AI - Editorial & Publishing Assistant
 // 1. PERSONA:
@@ -81,6 +85,21 @@ export const generateResponse = async (
 ): Promise<string> => {
     let finalPrompt = prompt;
     const contextParts: string[] = [];
+    
+    // ✅ STEP 1: Lấy context từ database nếu có bookId
+    let agentContext = null;
+    if (documentContext?.bookId) {
+        try {
+            agentContext = await getContextForQuery(
+                documentContext.bookId,
+                prompt
+            );
+        } catch (error) {
+            console.warn('Failed to get context from database', error);
+        }
+    }
+    
+    // User context
     if (user) {
         contextParts.push(`Đây là hồ sơ của người dùng, hãy dựa vào đây để cá nhân hóa câu trả lời:\n${JSON.stringify({ name: user.name }, null, 2)}`);
     }
@@ -88,7 +107,37 @@ export const generateResponse = async (
         contextParts.push(`This is additional context for the user's query:\n\n--- CONTEXT ---\n${context}\n\n--- END CONTEXT ---`);
     }
 
-    if (documentContext) {
+    // ✅ STEP 2: Sử dụng context từ database (ưu tiên)
+    if (agentContext) {
+        // Book-level context
+        if (agentContext.book_context) {
+            contextParts.push(
+                `Book Context:\n` +
+                `Summary: ${agentContext.book_context.summary || 'N/A'}\n` +
+                `Characters: ${JSON.stringify(agentContext.book_context.characters || [])}\n` +
+                `Writing Style: ${JSON.stringify(agentContext.book_context.writing_style || {})}`
+            );
+        }
+        
+        // Recent chapters
+        if (agentContext.recent_chapters && agentContext.recent_chapters.length > 0) {
+            const chaptersText = agentContext.recent_chapters
+                .map(ch => `Chapter ${ch.chapter_number}: ${ch.title || 'Untitled'}\n${ch.summary || 'No summary'}`)
+                .join('\n\n');
+            contextParts.push(`Recent Chapters:\n${chaptersText}`);
+        }
+        
+        // ✅ Semantic search results (từ Local Embedding)
+        if (agentContext.semantic_results && agentContext.semantic_results.length > 0) {
+            const searchText = agentContext.semantic_results
+                .map(result => `Chapter ${result.chapter_number}: ${result.title || 'Untitled'}\n${result.summary || 'No summary'}`)
+                .join('\n\n');
+            contextParts.push(`Relevant Passages (from semantic search):\n${searchText}`);
+        }
+    }
+    
+    // ✅ Fallback: Dùng documentContext nếu không có database context
+    if (!agentContext && documentContext) {
         const outlineText = (documentContext.outline ?? [])
             .map(section => {
                 const indent = section.level > 1 ? '  '.repeat(section.level - 1) : '';
@@ -112,7 +161,13 @@ export const generateResponse = async (
         ].filter(Boolean).join('\n\n'));
     }
     
+    // ✅ STEP 3: Final prompt
     finalPrompt = `${contextParts.join('\n\n')}\n\n--- USER'S PROMPT ---\n${prompt}`;
+
+    // Check if offline mode or no API key
+    if (isOfflineMode || !ai) {
+        return getOfflineResponse(prompt, documentContext);
+    }
 
     try {
         const response = await ai.models.generateContent({
@@ -126,7 +181,83 @@ export const generateResponse = async (
         return response.text.trim() || "Mình không biết phải nói gì nữa... 😅";
     } catch (error) {
         console.error("Error generating response from Gemini API:", error);
-        return "Xin lỗi, đã có lỗi xảy ra khi kết nối với AI.";
-
+        // Fallback to offline mode on API error
+        return getOfflineResponse(prompt, documentContext);
     }
 };
+
+/**
+ * Offline fallback response when API is unavailable
+ */
+function getOfflineResponse(
+    prompt: string,
+    documentContext?: DocumentContextForAI
+): string {
+    const lowerPrompt = prompt.toLowerCase();
+    
+    // Check if it's a search query
+    const searchKeywords = ['tìm', 'search', 'tìm kiếm', 'where', 'find', 'tìm ở đâu'];
+    const isSearchQuery = searchKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (isSearchQuery) {
+        return `Tôi có thể giúp bạn tìm kiếm trong tài liệu! 
+
+Hiện tại tôi đang ở chế độ offline, nhưng tính năng **tìm kiếm ngữ nghĩa** vẫn hoạt động hoàn toàn local.
+
+Hãy sử dụng:
+- **Semantic Search**: Tìm nội dung theo ý nghĩa (không cần từ khóa chính xác)
+- **Vector Search**: Tìm các đoạn văn tương tự trong tài liệu
+
+${documentContext ? `Tôi thấy bạn đang làm việc với "${documentContext.title}". Bạn có thể tìm kiếm trong tài liệu này.` : ''}
+
+Để sử dụng AI chat đầy đủ, vui lòng thêm API key trong Settings.`;
+    }
+    
+    // Check if it's about document analysis
+    const analysisKeywords = ['phân tích', 'analyze', 'đánh giá', 'critique', 'review'];
+    const isAnalysisQuery = analysisKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (isAnalysisQuery && documentContext) {
+        return `Tôi hiểu bạn muốn phân tích tài liệu "${documentContext.title}".
+
+Hiện tại tôi đang ở chế độ offline, nhưng bạn vẫn có thể:
+- ✅ Tìm kiếm ngữ nghĩa trong tài liệu
+- ✅ Xem và chỉnh sửa nội dung
+- ✅ Quản lý workspace
+
+Để sử dụng AI phân tích và đánh giá đầy đủ, vui lòng:
+1. Thêm API key (Gemini hoặc OpenAI) trong Settings
+2. Đảm bảo có kết nối internet
+3. Khởi động lại ứng dụng
+
+API key có thể lấy miễn phí tại:
+- Google Gemini: https://aistudio.google.com/app/apikey
+- OpenAI: https://platform.openai.com/api-keys`;
+    }
+    
+    // Generic offline message
+    return `Hiện tại tôi đang ở chế độ offline. Một số tính năng AI cần kết nối internet và API key.
+
+**Tính năng vẫn hoạt động (không cần API):**
+- ✅ Tìm kiếm ngữ nghĩa trong tài liệu (semantic search)
+- ✅ Lưu trữ và quản lý tài liệu
+- ✅ Xem và chỉnh sửa nội dung
+- ✅ Vector search (tìm theo ý nghĩa)
+
+**Tính năng cần API:**
+- ⚠️ AI chat/conversation
+- ⚠️ Text generation
+- ⚠️ Content analysis & critique
+- ⚠️ AI-powered feedback
+
+**Để sử dụng AI features:**
+1. Vào Settings → API Configuration
+2. Thêm API key (Gemini hoặc OpenAI)
+3. Khởi động lại ứng dụng
+
+API keys miễn phí:
+- Google Gemini: https://aistudio.google.com/app/apikey
+- OpenAI: https://platform.openai.com/api-keys
+
+Bạn vẫn có thể sử dụng app để quản lý và tìm kiếm tài liệu ngay bây giờ!`;
+}

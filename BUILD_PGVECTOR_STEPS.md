@@ -179,3 +179,7 @@ copy "%TEMP%\pgvector\vector--*.sql" "C:\Program Files\PostgreSQL\16\share\exten
 **Priority:** HIGH
 
 
+
+
+
+

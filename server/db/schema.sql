@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS recent_chapters (
   plot_points JSONB,
   writing_notes JSONB,
   content_hash TEXT NOT NULL,
-  embedding_vector vector(768),
+  embedding_vector vector(384),
   embedding_version TEXT,
   embedding_timestamp TIMESTAMP,
   extraction_model_version TEXT,
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS chapter_chunks (
   chapter_id UUID NOT NULL REFERENCES recent_chapters(chapter_id) ON DELETE CASCADE,
   chunk_index INTEGER NOT NULL,
   chunk_text TEXT NOT NULL,
-  chunk_embedding vector(768),
+  chunk_embedding vector(384),
   word_count INTEGER,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(chapter_id, chunk_index)
@@ -128,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_workspace_canvas_workspace_updated ON workspace_c
 -- Utility Tables
 CREATE TABLE IF NOT EXISTS embedding_cache (
   content_hash TEXT PRIMARY KEY,
-  embedding_vector vector(768) NOT NULL,
+  embedding_vector vector(384) NOT NULL,
   model_version TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS chapter_archive (
   plot_points JSONB,
   writing_notes JSONB,
   content_hash TEXT,
-  embedding_vector vector(768),
+  embedding_vector vector(384),
   embedding_version TEXT,
   archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   archive_reason TEXT -- 'window_overflow' | 'manual' | 'book_deleted'
@@ -201,5 +201,9 @@ CREATE TRIGGER update_workspaces_updated_at
   BEFORE UPDATE ON workspaces
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
+
+
+
+
 
 

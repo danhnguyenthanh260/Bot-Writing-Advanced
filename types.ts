@@ -50,7 +50,9 @@ export interface WorkProfile {
   lastSyncedAt?: string;
   document?: StructuredGoogleDoc;
   // To link pages to this specific work
-  pageIds: string[]; 
+  pageIds: string[];
+  // Database book_id (from Flow 1)
+  bookId?: string;
 }
 
 export interface DocumentContextForAI {
@@ -59,12 +61,19 @@ export interface DocumentContextForAI {
   plainText: string;
   outline?: GoogleDocSection[];
   wordCount?: number;
+  bookId?: string; // Database book_id for context retrieval
 }
 
 export interface GoogleDocIngestResponse {
   docId: string;
   document: StructuredGoogleDoc;
   workProfile: WorkProfile;
+  book_id?: string; // Database book_id
+  processing?: {
+    book_job_id: string;
+    chapter_job_ids: string[];
+    status: 'processing' | 'completed' | 'failed';
+  };
 }
 
 export interface WorkspaceSnapshot {

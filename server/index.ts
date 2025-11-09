@@ -4,6 +4,8 @@ dotenv.config();
 import express, { type ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import googleDocsRouter from './routes/googleDocs.ts';
+import processingRouter from './routes/processingRoutes.ts';
+import { deploySchema, checkSchemaDeployed } from './db/migrate.ts';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -28,6 +30,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/google-docs', googleDocsRouter);
+app.use('/api/processing', processingRouter);
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error('Unhandled error', err);
@@ -36,6 +39,24 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server started on port ${port}`);
-});
+// Initialize database schema on startup
+async function initializeServer() {
+  try {
+    const schemaExists = await checkSchemaDeployed();
+    if (!schemaExists) {
+      console.log('Schema not found, deploying...');
+      await deploySchema();
+    } else {
+      console.log('Schema already deployed');
+    }
+    
+    app.listen(port, () => {
+      console.log(`Server started on port ${port}`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
+    process.exit(1);
+  }
+}
+
+initializeServer();

@@ -1653,3 +1653,7 @@ EMBEDDING_RATE_LIMIT=1000
 *Tài liệu này là master plan tổng hợp tất cả các giải pháp và best practices cho storage architecture.*
 
 
+
+
+
+

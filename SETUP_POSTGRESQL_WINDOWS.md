@@ -320,3 +320,7 @@ Sau khi setup xong PostgreSQL + pgvector:
 **Time:** ~30 minutes
 
 
+
+
+
+

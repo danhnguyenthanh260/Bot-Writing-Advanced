@@ -1,0 +1,79 @@
+{
+  "appId": "com.dei8.writingstudio",
+  "productName": "Dei8 AI Writing Studio",
+  "copyright": "Copyright © 2024 Dei8",
+  "directories": {
+    "output": "dist-electron",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "server/**/*",
+    "electron/**/*",
+    "local_embedding_server.py",
+    "package.json",
+    "!node_modules/**/*",
+    "node_modules/@xenova/**/*",
+    "node_modules/express/**/*",
+    "node_modules/cors/**/*",
+    "node_modules/pg/**/*",
+    "node_modules/dotenv/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "local_embedding_server.py",
+      "to": "local_embedding_server.py"
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.ico"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "build/icon.icns",
+    "category": "public.app-category.writing"
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.png",
+    "category": "Office"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Dei8 AI Writing Studio"
+  },
+  "dmg": {
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  }
+}
+

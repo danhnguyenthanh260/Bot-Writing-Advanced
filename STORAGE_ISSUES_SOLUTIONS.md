@@ -1452,3 +1452,7 @@ async function getEmbedding(
 *Tài liệu này giải quyết các vấn đề tiềm ẩn bạn đã nêu. Bạn có muốn tôi detail hóa phần nào không?*
 
 
+
+
+
+
