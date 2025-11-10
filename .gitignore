@@ -17,6 +17,15 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Service account credentials
+google-service-account.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!electron-builder.json
+!metadata.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
