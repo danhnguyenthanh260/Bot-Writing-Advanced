@@ -3,6 +3,7 @@ import { updateProcessingStatus } from '../services/statusService';
 import { extractBookContext } from '../services/extractionService';
 import { createBook, getBookByGoogleDocId } from '../services/bookService';
 import { db } from '../db/connection';
+import { logDataFlow, logWithTiming, LogStage, LogLevel } from '../services/dataFlowLogger';
 
 export interface BookProcessingJobData {
   bookId?: string;
@@ -47,10 +48,49 @@ async function processBook(job: Job<BookProcessingJobData>): Promise<any> {
     
     // Phase 2: Extract book context
     await updateProcessingStatus(finalBookId, 'book', 'processing', 30);
-    const extractionResult = await extractBookContext(content, title);
+    
+    await logDataFlow('book', LogStage.EXTRACTION, LogLevel.INFO,
+      `Starting book context extraction`,
+      { entityId: finalBookId });
+    
+    const extractionResult = await logWithTiming(
+      'book',
+      LogStage.EXTRACTION,
+      LogLevel.INFO,
+      `Book context extraction completed`,
+      async () => await extractBookContext(content, title),
+      {
+        entityId: finalBookId,
+        metadata: { 
+          title,
+          wordCount: content.split(/\s+/).length,
+          confidence: 0, // Will be updated after extraction
+        },
+      }
+    );
+    
+    await logDataFlow('book', LogStage.EXTRACTION, LogLevel.INFO,
+      `Book context extracted with confidence: ${extractionResult.confidence.toFixed(2)}`,
+      { 
+        entityId: finalBookId,
+        metadata: { 
+          confidence: extractionResult.confidence,
+          hasErrors: extractionResult.errors.length > 0,
+          hasWarnings: extractionResult.warnings.length > 0,
+        },
+      });
     
     // Save book context
-    await db.query(
+    await logDataFlow('book', LogStage.STORAGE, LogLevel.INFO,
+      `Saving book context to database`,
+      { entityId: finalBookId });
+    
+    await logWithTiming(
+      'book',
+      LogStage.STORAGE,
+      LogLevel.INFO,
+      `Book context saved`,
+      async () => await db.query(
       `INSERT INTO book_contexts (
         book_id, summary, characters, world_setting, 
         writing_style, story_arc, extraction_model_version, extraction_timestamp
@@ -75,9 +115,14 @@ async function processBook(job: Job<BookProcessingJobData>): Promise<any> {
         JSON.stringify(extractionResult.data.story_arc),
         'gemini-2.0-flash-exp',
       ]
+      ),
+      { entityId: finalBookId }
     );
     
     // Phase 3: Complete
+    await logDataFlow('book', LogStage.INGEST, LogLevel.INFO,
+      `Book processing completed successfully`,
+      { entityId: finalBookId, metadata: { confidence: extractionResult.confidence } });
     await updateProcessingStatus(finalBookId, 'book', 'completed', 100);
     
     return {
@@ -125,5 +170,7 @@ export async function queueBookProcessing(
 export function getBookProcessingStatus(jobId: string) {
   return simpleQueue.getJobStatus(jobId);
 }
+
+
 
 

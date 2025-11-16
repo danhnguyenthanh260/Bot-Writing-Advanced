@@ -47,3 +47,4 @@ WHERE table_name IN ('recent_chapters', 'chapter_chunks', 'embedding_cache')
 ORDER BY table_name, column_name;
 
 
+

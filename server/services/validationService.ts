@@ -211,3 +211,12 @@ export function calculateConfidence(validation: ValidationResult): number {
 }
 
 
+
+
+
+
+
+
+
+
+

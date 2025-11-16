@@ -151,6 +151,24 @@ CREATE TABLE IF NOT EXISTS processing_status (
 CREATE INDEX IF NOT EXISTS idx_processing_status_entity ON processing_status(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_processing_status_status ON processing_status(status, started_at DESC);
 
+-- Data Flow Logs Table
+CREATE TABLE IF NOT EXISTS data_flow_logs (
+  log_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entity_type TEXT NOT NULL, -- 'book' | 'chapter' | 'chunk' | 'system'
+  entity_id UUID,
+  stage TEXT NOT NULL, -- 'ingest' | 'extraction' | 'embedding' | 'storage' | 'validation' | 'cache'
+  level TEXT NOT NULL, -- 'info' | 'warn' | 'error' | 'debug'
+  message TEXT NOT NULL,
+  metadata JSONB,
+  duration_ms INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_data_flow_logs_entity ON data_flow_logs(entity_type, entity_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_data_flow_logs_stage ON data_flow_logs(stage, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_data_flow_logs_level ON data_flow_logs(level, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_data_flow_logs_created ON data_flow_logs(created_at DESC);
+
 -- Archive Tables
 CREATE TABLE IF NOT EXISTS chapter_archive (
   archive_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -201,6 +219,8 @@ CREATE TRIGGER update_workspaces_updated_at
   BEFORE UPDATE ON workspaces
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
+
+
 
 
 

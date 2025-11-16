@@ -5,6 +5,7 @@ import { generateHierarchicalEmbeddings, saveHierarchicalEmbeddings } from '../s
 import { db } from '../db/connection';
 import { calculateContentHash } from '../utils/contentHash';
 import { detectChapterChange } from '../services/changeDetectionService';
+import { logDataFlow, logWithTiming, LogStage, LogLevel } from '../services/dataFlowLogger';
 
 export interface ChapterProcessingJobData {
   chapterId: string;
@@ -24,20 +25,53 @@ async function processChapter(job: Job<ChapterProcessingJobData>): Promise<any> 
     // Phase 1: Check if content changed
     await updateProcessingStatus(chapterId, 'chapter', 'processing', 10);
     
+    await logDataFlow('chapter', LogStage.VALIDATION, LogLevel.INFO,
+      `Checking for content changes`,
+      { entityId: chapterId, metadata: { chapterNumber, bookId } });
+    
     const change = await detectChapterChange(bookId, chapterNumber, content);
     if (!change.hasChanged) {
       // No change, skip processing
+      await logDataFlow('chapter', LogStage.VALIDATION, LogLevel.INFO,
+        `No content changes detected, skipping processing`,
+        { entityId: chapterId, metadata: { cached: true } });
+      
       await updateProcessingStatus(chapterId, 'chapter', 'completed', 100);
       return { status: 'completed', chapterId, cached: true };
     }
     
+    await logDataFlow('chapter', LogStage.VALIDATION, LogLevel.INFO,
+      `Content changed, proceeding with processing`,
+      { entityId: chapterId });
+    
     // Phase 2: Extract metadata
     await updateProcessingStatus(chapterId, 'chapter', 'processing', 30);
-    const extractionResult = await extractChapterMetadata(
-      content,
-      chapterNumber,
-      title
+    
+    await logDataFlow('chapter', LogStage.EXTRACTION, LogLevel.INFO,
+      `Starting chapter metadata extraction`,
+      { entityId: chapterId });
+    
+    const extractionResult = await logWithTiming(
+      'chapter',
+      LogStage.EXTRACTION,
+      LogLevel.INFO,
+      `Chapter metadata extraction completed`,
+      async () => await extractChapterMetadata(content, chapterNumber, title),
+      {
+        entityId: chapterId,
+        metadata: { chapterNumber, title, wordCount: content.split(/\s+/).length },
+      }
     );
+    
+    await logDataFlow('chapter', LogStage.EXTRACTION, LogLevel.INFO,
+      `Chapter metadata extracted with confidence: ${extractionResult.confidence.toFixed(2)}`,
+      { 
+        entityId: chapterId,
+        metadata: { 
+          confidence: extractionResult.confidence,
+          hasErrors: extractionResult.errors.length > 0,
+        },
+      });
     
     // Update chapter with metadata
     const contentHash = calculateContentHash(content);
@@ -72,18 +106,40 @@ async function processChapter(job: Job<ChapterProcessingJobData>): Promise<any> 
     
     // Phase 3: Generate embeddings
     await updateProcessingStatus(chapterId, 'chapter', 'processing', 70);
-    const embeddings = await generateHierarchicalEmbeddings(
-      content,
-      chapterNumber,
-      title
+    
+    await logDataFlow('chapter', LogStage.EMBEDDING, LogLevel.INFO,
+      `Starting embedding generation`,
+      { entityId: chapterId });
+    
+    const embeddings = await logWithTiming(
+      'chapter',
+      LogStage.EMBEDDING,
+      LogLevel.INFO,
+      `Embeddings generated`,
+      async () => await generateHierarchicalEmbeddings(content, chapterNumber, title),
+      {
+        entityId: chapterId,
+        metadata: { chapterNumber },
+      }
     );
     
-    await saveHierarchicalEmbeddings(
-      chapterId,
-      bookId,
-      chapterNumber,
-      embeddings,
-      'all-MiniLM-L6-v2' // ✅ Local embedding model
+    await logDataFlow('chapter', LogStage.EMBEDDING, LogLevel.INFO,
+      `Generated ${embeddings.chunkEmbeddings.length} chunk embeddings`,
+      { entityId: chapterId, metadata: { chunkCount: embeddings.chunkEmbeddings.length } });
+    
+    await logWithTiming(
+      'chapter',
+      LogStage.STORAGE,
+      LogLevel.INFO,
+      `Embeddings saved to database`,
+      async () => await saveHierarchicalEmbeddings(
+        chapterId,
+        bookId,
+        chapterNumber,
+        embeddings,
+        'all-MiniLM-L6-v2'
+      ),
+      { entityId: chapterId }
     );
     
     // Phase 4: Complete
@@ -132,5 +188,7 @@ export async function queueChapterProcessing(
 export function getChapterProcessingStatus(jobId: string) {
   return simpleQueue.getJobStatus(jobId);
 }
+
+
 
 

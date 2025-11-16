@@ -1,6 +1,9 @@
-import { Pool } from 'pg';
 import type { PoolConfig } from 'pg';
+import dotenv from 'dotenv';
+dotenv.config();
 
+// 2) Then import and create pool
+import { Pool } from 'pg';
 /**
  * Normalize DATABASE_URL to ensure password is properly URL encoded
  */
@@ -35,9 +38,18 @@ function normalizeDatabaseUrl(url: string): string {
 // Parse DATABASE_URL or use individual connection parameters
 function getPoolConfig(): PoolConfig {
   const databaseUrl = process.env.DATABASE_URL;
+  console.log("DEBUG RAW DATABASE_URL:", JSON.stringify(process.env.DATABASE_URL));
+
   
   if (databaseUrl) {
-    const connectionString = String(databaseUrl).trim();
+    // Ensure it's a string primitive, not String object
+    let connectionString: string;
+    if (typeof databaseUrl === 'string') {
+      connectionString = databaseUrl.trim();
+    } else {
+      // Force to string primitive
+      connectionString = String(databaseUrl).valueOf().trim();
+    }
     
     if (!connectionString) {
       throw new Error('DATABASE_URL is empty or invalid');
@@ -48,28 +60,51 @@ function getPoolConfig(): PoolConfig {
       throw new Error('DATABASE_URL must start with postgresql:// or postgres://');
     }
     
+    // Normalize URL to ensure password is properly encoded
     try {
-      // Parse URL to extract components explicitly
-      // This ensures password is always a string, not undefined
+      const url = new URL(connectionString);
+      
+      // If password exists and contains special characters, ensure it's encoded
+      if (url.password) {
+        const decodedPassword = decodeURIComponent(url.password);
+        // If password has special chars that need encoding, re-encode it
+        if (decodedPassword !== url.password || /[@:?#[\]%]/.test(decodedPassword)) {
+          const encodedPassword = encodeURIComponent(decodedPassword);
+          // Rebuild URL with properly encoded password
+          connectionString = `${url.protocol}//${url.username}:${encodedPassword}@${url.host}${url.pathname}${url.search}${url.hash}`;
+        }
+      }
+    } catch (urlError) {
+      // If URL parsing fails, use original connectionString
+      console.warn('[DEBUG connection.ts] Failed to parse URL for normalization:', urlError);
+    }
+    
+    // Final check: ensure it's a string primitive
+    if (typeof connectionString !== 'string') {
+      connectionString = String(connectionString).valueOf();
+    }
+    
+    
+    // Parse URL to extract components explicitly
+    // This ensures password is always a string primitive, not undefined
+    try {
       const url = new URL(connectionString);
       
       // Extract password - URL automatically decodes it
       // CRITICAL: Ensure password is always a string primitive, never undefined, null, or String object
       let password: string = '';
       if (url.password !== null && url.password !== undefined) {
-        // Convert to string primitive (not String object)
-        password = String(url.password).valueOf();
+        // Force to string primitive - URL.password is already decoded
+        password = String(url.password);
+        // Ensure it's truly a primitive, not a String object
+        if (password instanceof String) {
+          password = password.valueOf();
+        }
       }
       
-      // Ensure it's a string primitive
+      // Final safety check - ensure password is always a string primitive
       if (typeof password !== 'string') {
         password = String(password || '');
-      }
-      
-      // Debug logging (only in development)
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[DEBUG connection.ts] Password type:', typeof password, 'Length:', password.length);
-        console.log('[DEBUG connection.ts] Password is string primitive?', typeof password === 'string' && password.constructor === String.prototype.constructor);
       }
       
       // Build config object with explicit password as string
@@ -88,30 +123,44 @@ function getPoolConfig(): PoolConfig {
       
       // Final validation: ensure password is string primitive
       if (typeof config.password !== 'string') {
-        throw new Error(`Password must be a string primitive, got ${typeof config.password} (${config.password?.constructor?.name || 'unknown'})`);
+        throw new Error(`Password must be a string primitive, got ${typeof config.password}`);
       }
       
       // Additional check: ensure it's not a String object
       if (config.password instanceof String) {
-        config.password = String(config.password);
+        config.password = String(config.password).valueOf();
       }
       
-      // Debug: verify config password
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[DEBUG connection.ts] Final config password type:', typeof config.password);
-        console.log('[DEBUG connection.ts] Final config password is string primitive?', typeof config.password === 'string');
-      }
+      // Debug: Log password type and length (not value for security)
+      console.log('[DEBUG connection.ts] Password type:', typeof config.password);
+      console.log('[DEBUG connection.ts] Password is string primitive?', typeof config.password === 'string' && !(config.password instanceof String));
+      console.log('[DEBUG connection.ts] Password length:', config.password.length);
       
       return config;
     } catch (parseError: any) {
-      // If URL parsing fails, try connectionString as fallback
-      console.warn('Failed to parse DATABASE_URL, using connectionString directly:', parseError.message);
-      return {
-        connectionString: connectionString,
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      };
+      // If URL parsing fails, try to extract manually using regex
+      console.warn('[DEBUG connection.ts] Failed to parse DATABASE_URL, trying manual extraction:', parseError.message);
+      
+      // Try regex extraction as fallback
+      const match = connectionString.match(/postgresql?:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+      if (match) {
+        const [, user, password, host, port, database] = match;
+        // Ensure password is string primitive after decoding
+        const decodedPassword = String(decodeURIComponent(password));
+        return {
+          host: host,
+          port: parseInt(port, 10),
+          database: database,
+          user: decodeURIComponent(user),
+          password: decodedPassword,
+          max: 20,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 2000,
+        };
+      }
+      
+      // Last resort: throw error instead of using connectionString directly
+      throw new Error(`Failed to parse DATABASE_URL: ${parseError.message}`);
     }
   }
   
@@ -137,7 +186,31 @@ function getPoolConfig(): PoolConfig {
   };
 }
 
-const pool = new Pool(getPoolConfig());
+// Get pool config and validate before creating Pool
+let poolConfig: PoolConfig;
+try {
+  poolConfig = getPoolConfig();
+  
+  // Final validation before creating Pool
+  if (poolConfig.password === undefined || poolConfig.password === null) {
+    console.error('[DEBUG connection.ts] Password is undefined or null in config!');
+    console.error('[DEBUG connection.ts] Config keys:', Object.keys(poolConfig));
+    throw new Error('Password cannot be undefined or null');
+  }
+  
+  if (typeof poolConfig.password !== 'string') {
+    console.error('[DEBUG connection.ts] Password type:', typeof poolConfig.password);
+    throw new Error(`Password must be a string, got ${typeof poolConfig.password}`);
+  }
+  
+  console.log('[DEBUG connection.ts] Creating Pool with password type:', typeof poolConfig.password);
+  console.log('[DEBUG connection.ts] Password length:', poolConfig.password.length);
+} catch (error) {
+  console.error('[DEBUG connection.ts] Error creating pool config:', error);
+  throw error;
+}
+
+const pool = new Pool(poolConfig);
 
 // Test connection
 pool.on('connect', () => {

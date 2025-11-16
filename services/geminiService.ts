@@ -1,6 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 import type { DocumentContextForAI, User } from '../types';
-import { getContextForQuery } from '../server/services/contextRetrievalService'; // ✅ THÊM
 
 // Initialize AI only if API key is available
 const apiKey = process.env.API_KEY || process.env.VITE_API_KEY;
@@ -86,14 +85,19 @@ export const generateResponse = async (
     let finalPrompt = prompt;
     const contextParts: string[] = [];
     
-    // ✅ STEP 1: Lấy context từ database nếu có bookId
+    // ✅ STEP 1: Lấy context từ database nếu có bookId (via API)
     let agentContext = null;
     if (documentContext?.bookId) {
         try {
-            agentContext = await getContextForQuery(
-                documentContext.bookId,
-                prompt
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+            const response = await fetch(
+                `${API_BASE_URL}/api/context/${documentContext.bookId}?query=${encodeURIComponent(prompt)}`
             );
+            if (response.ok) {
+                agentContext = await response.json();
+            } else {
+                console.warn('Failed to get context from API', response.statusText);
+            }
         } catch (error) {
             console.warn('Failed to get context from database', error);
         }

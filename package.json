@@ -23,14 +23,18 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^2.1.9",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1",
-    "concurrently": "^8.2.2",
-    "wait-on": "^7.2.0"
+    "wait-on": "^7.2.0",
+    "tsx": "^4.19.2"
   },
   "optionalDependencies": {
     "@xenova/transformers": "^2.17.0"
@@ -40,11 +44,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server": "ts-node --esm server/index.ts",
+    "server": "tsx server/index.ts",
+    "db:setup": "npx tsx server/db/setupDatabase.ts",
+    "db:verify": "npx tsx server/db/verifySetup.ts",
     "db:reset": "ts-node --esm server/db/resetSchema.ts",
     "db:check": "ts-node --esm server/db/checkSchema.ts",
     "db:test": "ts-node --esm server/db/testConnection.ts",
+    "db:install-vector": "ts-node --esm server/db/installVectorExtension.ts",
     "db:debug": "ts-node --esm server/db/debugPassword.ts",
+    "db:check-env": "ts-node --esm server/db/checkEnv.ts",
     "embedding:start": "python local_embedding_server.py",
     "embedding:install": "python -m pip install sentence-transformers fastapi uvicorn",
     "embedding:test": "curl http://localhost:8000/",
@@ -52,5 +60,13 @@
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:pack": "electron-builder --dir"
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "allowImportingTsExtensions": true
+    }
   }
 }

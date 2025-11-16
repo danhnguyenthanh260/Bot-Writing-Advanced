@@ -43,6 +43,7 @@ async function checkSchemaData(): Promise<{
       'embedding_cache',
       'processing_status',
       'chapter_archive',
+      'data_flow_logs',
     ];
     
     for (const table of tables) {

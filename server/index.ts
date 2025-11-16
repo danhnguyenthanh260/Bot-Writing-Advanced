@@ -5,6 +5,10 @@ import express, { type ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import googleDocsRouter from './routes/googleDocs.ts';
 import processingRouter from './routes/processingRoutes.ts';
+import contextRouter from './routes/contextRoutes.ts';
+import resultsRouter from './routes/resultsRoutes.ts';
+import logsRouter from './routes/logsRoutes.ts';
+import authRouter from './routes/authRoutes.ts';
 import { deploySchema, checkSchemaDeployed } from './db/migrate.ts';
 
 const app = express();
@@ -31,6 +35,10 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/google-docs', googleDocsRouter);
 app.use('/api/processing', processingRouter);
+app.use('/api/context', contextRouter);
+app.use('/api/results', resultsRouter);
+app.use('/api/logs', logsRouter);
+app.use('/api/auth', authRouter);
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error('Unhandled error', err);
@@ -48,6 +56,16 @@ async function initializeServer() {
       await deploySchema();
     } else {
       console.log('Schema already deployed');
+    }
+    
+    // Recover pending jobs after server restart
+    try {
+      const { recoverAllJobs } = await import('./jobs/jobRecovery.ts');
+      const recoveryResult = await recoverAllJobs();
+      console.log(`Job recovery: ${recoveryResult.books} books, ${recoveryResult.chapters} chapters queued`);
+    } catch (recoveryError) {
+      console.warn('Job recovery failed (non-critical):', recoveryError);
+      // Don't fail server startup if recovery fails
     }
     
     app.listen(port, () => {

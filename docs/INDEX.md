@@ -1,0 +1,157 @@
+# 📚 Tài Liệu Dự Án - Dei8 AI Writing Studio
+
+**Cập nhật:** 2024
+
+---
+
+## 🎯 Tài Liệu Chính
+
+- **[README.md](../README.md)** - Tài liệu tổng quan và hướng dẫn sử dụng chính
+- **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Tình trạng dự án và roadmap
+
+---
+
+## 📂 Cấu Trúc Tài Liệu
+
+### 🛠️ Setup & Installation (`docs/setup/`)
+
+**Database Setup:**
+- [SETUP_POSTGRESQL_WINDOWS.md](./setup/SETUP_POSTGRESQL_WINDOWS.md) - Hướng dẫn cài đặt PostgreSQL trên Windows
+- [DATABASE_SETUP_GUIDE.md](./setup/DATABASE_SETUP_GUIDE.md) - Hướng dẫn setup database
+- [QUICK_DATABASE_SETUP.md](./setup/QUICK_DATABASE_SETUP.md) - Setup database nhanh
+- [STEP_BY_STEP_DB_SETUP.md](./setup/STEP_BY_STEP_DB_SETUP.md) - Setup database từng bước
+- [DATABASE_URL_GUIDE.md](./setup/DATABASE_URL_GUIDE.md) - Hướng dẫn cấu hình DATABASE_URL
+- [VERIFY_DATABASE_CONNECTION.md](./setup/VERIFY_DATABASE_CONNECTION.md) - Kiểm tra kết nối database
+- [DB_RESET_GUIDE.md](./setup/DB_RESET_GUIDE.md) - Hướng dẫn reset database
+- [DATABASE_TABLES_OVERVIEW.md](./setup/DATABASE_TABLES_OVERVIEW.md) - Tổng quan các bảng database
+
+**pgvector Setup:**
+- [INSTALL_PGVECTOR_WINDOWS.md](./setup/INSTALL_PGVECTOR_WINDOWS.md) - Cài đặt pgvector trên Windows
+- [QUICK_INSTALL_PGVECTOR.md](./setup/QUICK_INSTALL_PGVECTOR.md) - Cài đặt pgvector nhanh
+- [BUILD_PGVECTOR_WINDOWS.md](./setup/BUILD_PGVECTOR_WINDOWS.md) - Build pgvector từ source
+- [BUILD_PGVECTOR_STEPS.md](./setup/BUILD_PGVECTOR_STEPS.md) - Các bước build pgvector
+
+**Build Tools:**
+- [SETUP_VS_BUILD_TOOLS.md](./setup/SETUP_VS_BUILD_TOOLS.md) - Setup Visual Studio Build Tools
+
+**Authentication & Services:**
+- [GOOGLE_SIGNIN_SETUP.md](./setup/GOOGLE_SIGNIN_SETUP.md) - Setup Google Sign-In
+- [DOCKER_SETUP.md](./setup/DOCKER_SETUP.md) - Setup Docker
+
+---
+
+### 🏗️ Implementation (`docs/implementation/`)
+
+**Tổng Quan:**
+- [IMPLEMENTATION_PHASES.md](./implementation/IMPLEMENTATION_PHASES.md) - Tổng quan các phase implementation
+
+**Các Phase:**
+- [PHASE_1_FOUNDATION.md](./implementation/PHASE_1_FOUNDATION.md) - Phase 1: Foundation
+- [PHASE_1_QUICK_START.md](./implementation/PHASE_1_QUICK_START.md) - Quick start Phase 1
+- [PHASE_2_NORMALIZATION.md](./implementation/PHASE_2_NORMALIZATION.md) - Phase 2: Normalization
+- [PHASE_2_ISSUES_FIXED.md](./implementation/PHASE_2_ISSUES_FIXED.md) - Các vấn đề đã fix trong Phase 2
+- [PHASE_3_QUERY_SEARCH.md](./implementation/PHASE_3_QUERY_SEARCH.md) - Phase 3: Query & Search
+- [PHASE_4_ASYNC_PROCESSING.md](./implementation/PHASE_4_ASYNC_PROCESSING.md) - Phase 4: Async Processing
+- [PHASE_5_OPTIMIZATION.md](./implementation/PHASE_5_OPTIMIZATION.md) - Phase 5: Optimization
+
+---
+
+### 🐛 Troubleshooting (`docs/troubleshooting/`)
+
+- [TROUBLESHOOTING.md](./troubleshooting/TROUBLESHOOTING.md) - Hướng dẫn xử lý lỗi chung
+- [FIX_ORIGIN_ERROR.md](./troubleshooting/FIX_ORIGIN_ERROR.md) - Sửa lỗi CORS/Origin
+- [CHECK_ORIGIN_ISSUES.md](./troubleshooting/CHECK_ORIGIN_ISSUES.md) - Kiểm tra vấn đề Origin
+- [FIX_PORT_5433.md](./troubleshooting/FIX_PORT_5433.md) - Sửa lỗi port 5433
+- [FIX_PASSWORD_AND_VECTOR.md](./troubleshooting/FIX_PASSWORD_AND_VECTOR.md) - Sửa lỗi password và vector
+- [SCHEMA_SCRIPT_ISSUES.md](./troubleshooting/SCHEMA_SCRIPT_ISSUES.md) - Vấn đề khi chạy schema script
+- [AUTH_AND_PERSISTENCE_FIX.md](./troubleshooting/AUTH_AND_PERSISTENCE_FIX.md) - Sửa lỗi authentication và persistence
+- [DOCKER_TROUBLESHOOTING.md](./troubleshooting/DOCKER_TROUBLESHOOTING.md) - Xử lý lỗi Docker
+
+---
+
+### 📖 Guides (`docs/guides/`)
+
+**Quick Start:**
+- [QUICK_START.md](./guides/QUICK_START.md) - Hướng dẫn khởi động nhanh
+- [WHERE_TO_RUN.md](./guides/WHERE_TO_RUN.md) - Vị trí chạy lệnh
+
+**Data Flow & Analysis:**
+- [GOOGLE_DOCS_TO_DB_FLOW.md](./guides/GOOGLE_DOCS_TO_DB_FLOW.md) - Luồng dữ liệu từ Google Docs đến DB
+- [DATA_ANALYSIS_FLOW.md](./guides/DATA_ANALYSIS_FLOW.md) - Luồng phân tích dữ liệu
+- [VIEW_DATA_FLOW_LOGS.md](./guides/VIEW_DATA_FLOW_LOGS.md) - Xem logs data flow
+- [MIGRATION_DATA_FLOW_LOGS.md](./guides/MIGRATION_DATA_FLOW_LOGS.md) - Migration data flow logs
+- [VIEW_PROCESSED_RESULTS.md](./guides/VIEW_PROCESSED_RESULTS.md) - Xem kết quả đã xử lý
+
+**Features:**
+- [SEMANTIC_SEARCH_IMPLEMENTATION.md](./guides/SEMANTIC_SEARCH_IMPLEMENTATION.md) - Implementation semantic search
+- [LOCAL_EMBEDDING_GUIDE.md](./guides/LOCAL_EMBEDDING_GUIDE.md) - Hướng dẫn local embedding
+- [QUICK_START_LOCAL_EMBEDDING.md](./guides/QUICK_START_LOCAL_EMBEDDING.md) - Quick start local embedding
+
+**Utilities:**
+- [START_SERVICES.md](./guides/START_SERVICES.md) - Khởi động services
+- [QUICK_COMMANDS_WINDOWS.md](./guides/QUICK_COMMANDS_WINDOWS.md) - Các lệnh nhanh trên Windows
+- [IMPLEMENTATION_CHECKLIST.md](./guides/IMPLEMENTATION_CHECKLIST.md) - Checklist implementation
+
+---
+
+### 🏛️ Architecture (`docs/architecture/`)
+
+**UI & Design:**
+- [UI_UPGRADE_PLAN.md](./architecture/UI_UPGRADE_PLAN.md) - Kế hoạch nâng cấp UI
+- [UI_FIX_PLAN.md](./architecture/UI_FIX_PLAN.md) - Kế hoạch sửa lỗi UI
+- [ui_update.md](./architecture/ui_update.md) - Cập nhật UI
+
+**Storage & Data:**
+- [STORAGE_ARCHITECTURE_PLAN.md](./architecture/STORAGE_ARCHITECTURE_PLAN.md) - Kế hoạch kiến trúc storage
+- [STORAGE_MASTER_PLAN.md](./architecture/STORAGE_MASTER_PLAN.md) - Master plan storage
+- [STORAGE_PLAN_SUMMARY.md](./architecture/STORAGE_PLAN_SUMMARY.md) - Tóm tắt kế hoạch storage
+- [STORAGE_ISSUES_SOLUTIONS.md](./architecture/STORAGE_ISSUES_SOLUTIONS.md) - Vấn đề và giải pháp storage
+
+**Desktop App:**
+- [DESKTOP_APP_ARCHITECTURE.md](./architecture/DESKTOP_APP_ARCHITECTURE.md) - Kiến trúc desktop app
+- [DESKTOP_APP_SUMMARY.md](./architecture/DESKTOP_APP_SUMMARY.md) - Tóm tắt desktop app
+- [DESKTOP_APP_AI_REQUIREMENTS.md](./architecture/DESKTOP_APP_AI_REQUIREMENTS.md) - Yêu cầu AI cho desktop app
+
+**General:**
+- [FREE_FIRST_ARCHITECTURE.md](./architecture/FREE_FIRST_ARCHITECTURE.md) - Kiến trúc free-first
+
+---
+
+## 🔍 Tìm Kiếm Nhanh
+
+### Bắt Đầu Từ Đâu?
+
+1. **Lần đầu setup?** → Xem [QUICK_START.md](./guides/QUICK_START.md)
+2. **Cài đặt PostgreSQL?** → Xem [SETUP_POSTGRESQL_WINDOWS.md](./setup/SETUP_POSTGRESQL_WINDOWS.md)
+3. **Cài đặt pgvector?** → Xem [INSTALL_PGVECTOR_WINDOWS.md](./setup/INSTALL_PGVECTOR_WINDOWS.md)
+4. **Gặp lỗi?** → Xem [TROUBLESHOOTING.md](./troubleshooting/TROUBLESHOOTING.md)
+5. **Xem tình trạng dự án?** → Xem [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+
+### Theo Chủ Đề
+
+**Database:**
+- Setup: `docs/setup/DATABASE_*.md`
+- Troubleshooting: `docs/troubleshooting/FIX_*.md`
+
+**Implementation:**
+- Tổng quan: `docs/implementation/IMPLEMENTATION_PHASES.md`
+- Chi tiết: `docs/implementation/PHASE_*.md`
+
+**UI/UX:**
+- Plans: `docs/architecture/UI_*.md`
+
+**Data Flow:**
+- Guides: `docs/guides/*_FLOW.md`, `docs/guides/VIEW_*.md`
+
+---
+
+## 📝 Ghi Chú
+
+- Tất cả file `.md` mới sẽ được tự động lưu vào thư mục `docs/` với phân loại phù hợp
+- File `README.md` ở root là file chính, không di chuyển
+- File trong `components/docs/` là tài liệu component, giữ nguyên
+
+---
+
+**Last Updated:** 2024
+

@@ -47,18 +47,42 @@ export interface StructuredContentPiece {
 
 class GoogleDocsService {
   private authClientPromise?: Promise<AuthClient>;
+  private authClient?: AuthClient;
+  private lastTokenRefresh?: Date;
+  private readonly TOKEN_REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
 
-  async loadDocument(input: string): Promise<StructuredGoogleDoc> {
+  async loadDocument(input: string, retries: number = 3): Promise<StructuredGoogleDoc> {
     const documentId = this.extractDocumentId(input);
-    const auth = await this.getAuthClient();
-    const docsApi = google.docs({ version: 'v1', auth });
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const auth = await this.getAuthClient();
+        const docsApi = google.docs({ version: 'v1', auth });
 
-    const document = await docsApi.documents.get({ documentId });
-    if (!document.data) {
-      throw new Error('Google Docs API returned an empty document payload.');
+        const document = await docsApi.documents.get({ documentId });
+        if (!document.data) {
+          throw new Error('Google Docs API returned an empty document payload.');
+        }
+
+        return this.toStructuredDocument(documentId, document.data);
+      } catch (error: any) {
+        const status = error?.code ?? error?.response?.status;
+        
+        // Token expired or invalid - try to refresh
+        if ((status === 401 || status === 403) && attempt < retries) {
+          console.warn(`Google Docs API auth error (attempt ${attempt}/${retries}), refreshing token...`);
+          await this.refreshAuthClient();
+          continue;
+        }
+        
+        // Re-throw if last attempt or non-auth error
+        if (attempt === retries || (status !== 401 && status !== 403)) {
+          throw error;
+        }
+      }
     }
-
-    return this.toStructuredDocument(documentId, document.data);
+    
+    throw new Error('Failed to load document after retries');
   }
 
   extractDocumentId(input: string): string {
@@ -83,10 +107,48 @@ class GoogleDocsService {
   }
 
   private async getAuthClient(): Promise<AuthClient> {
-    if (!this.authClientPromise) {
-      this.authClientPromise = createAuthClient();
+    // Check if token needs refresh (for OAuth2)
+    if (this.authClient && this.shouldRefreshToken()) {
+      await this.refreshAuthClient();
     }
-    return this.authClientPromise;
+    
+    if (!this.authClient) {
+      this.authClient = await createAuthClient();
+      this.lastTokenRefresh = new Date();
+    }
+    
+    return this.authClient;
+  }
+
+  private shouldRefreshToken(): boolean {
+    if (!this.lastTokenRefresh) return false;
+    if (!('setCredentials' in this.authClient!)) return false; // Not OAuth2
+    
+    const timeSinceRefresh = Date.now() - this.lastTokenRefresh.getTime();
+    return timeSinceRefresh >= this.TOKEN_REFRESH_INTERVAL_MS;
+  }
+
+  private async refreshAuthClient(): Promise<void> {
+    try {
+      if (this.authClient && 'refreshAccessToken' in this.authClient) {
+        // OAuth2 client - refresh token
+        const { credentials } = await (this.authClient as OAuth2Client).refreshAccessToken();
+        (this.authClient as OAuth2Client).setCredentials(credentials);
+        this.lastTokenRefresh = new Date();
+        console.log('✅ OAuth2 token refreshed successfully');
+      } else {
+        // Service Account or new client - recreate
+        this.authClient = await createAuthClient();
+        this.lastTokenRefresh = new Date();
+        console.log('✅ Auth client recreated');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to refresh auth client:', error);
+      // Reset to force recreation on next call
+      this.authClient = undefined;
+      this.authClientPromise = undefined;
+      throw new Error(`Token refresh failed: ${error.message}`);
+    }
   }
 
   private toStructuredDocument(documentId: string, document: docs_v1.Schema$Document): StructuredGoogleDoc {
@@ -142,6 +204,7 @@ class GoogleDocsService {
       const text = (paragraph.elements ?? [])
         .map(el => el.textRun?.content ?? '')
         .join('')
+        .normalize('NFC') // Normalize Unicode (combine diacritics)
         .replace(/\s+$/g, '')
         .replace(/\s+/g, ' ');
 

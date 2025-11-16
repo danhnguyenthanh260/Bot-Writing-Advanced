@@ -1,0 +1,23 @@
+# Example override file for local development
+# Copy this to docker-compose.override.yml and customize
+
+version: '3.8'
+
+services:
+  # Override backend to mount local code for hot-reload
+  backend:
+    volumes:
+      - ./server:/app/server
+      - ./types.ts:/app/types.ts
+    environment:
+      NODE_ENV: development
+
+  # Override frontend to mount local code for hot-reload
+  frontend:
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:3001
+
+

@@ -1,0 +1,32 @@
+# Frontend Dockerfile (Vite - Development Mode)
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY vite.config.ts ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source files
+COPY index.html ./
+COPY index.tsx ./
+COPY index.css ./
+COPY App.tsx ./
+COPY types.ts ./
+COPY components/ ./components/
+COPY services/ ./services/
+COPY hooks/ ./hooks/
+COPY constants/ ./constants/
+
+# Expose Vite dev server port
+EXPOSE 3000
+
+# Start Vite dev server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+

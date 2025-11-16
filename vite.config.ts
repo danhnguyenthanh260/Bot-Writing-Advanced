@@ -18,6 +18,26 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      ssr: {
+        noExternal: [],
+        external: ['pg', 'pg-native'],
+      },
+      build: {
+        rollupOptions: {
+          external: (id) => {
+            // Exclude Node.js built-in modules and pg from client bundle
+            const nodeModules = [
+              'pg', 'pg-native', 'events', 'util', 'crypto', 'stream', 
+              'buffer', 'path', 'fs', 'os', 'net', 'tls', 'dns', 
+              'http', 'https', 'url', 'zlib', 'querystring'
+            ];
+            return nodeModules.some(mod => id === mod || id.startsWith(`${mod}/`));
+          },
+        },
+      },
+      optimizeDeps: {
+        exclude: ['pg', 'pg-native'],
+      },
     };
 });

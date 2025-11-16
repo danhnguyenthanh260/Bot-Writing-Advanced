@@ -1,7 +1,11 @@
 import { GoogleGenAI } from '@google/genai';
 import { validateBookContextSchema, validateChapterMetadataSchema, calculateConfidence } from './validationService';
+import { truncateTextForAI, normalizeText } from '../utils/textProcessing';
+import { retryWithTimeout } from '../utils/timeout';
 
 const genAI = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY || '' });
+const MIN_CONFIDENCE_THRESHOLD = 0.5; // Minimum confidence to accept extraction
+const AI_TIMEOUT_MS = 60000; // 60 seconds timeout for AI calls
 
 export interface ExtractionResult<T> {
   data: T;
@@ -61,10 +65,9 @@ export async function extractBookContext(
   fullText: string,
   title: string
 ): Promise<ExtractionResult<BookContext>> {
-  // Truncate if too long (keep first 50000 chars)
-  const truncatedText = fullText.length > 50000 
-    ? fullText.substring(0, 50000) + '... (truncated)'
-    : fullText;
+  // Normalize and truncate text
+  const normalizedText = normalizeText(fullText);
+  const truncatedText = truncateTextForAI(normalizedText, 50000);
 
   const prompt = `Analyze this book and extract structured information in JSON format.
 
@@ -94,10 +97,21 @@ Extract the following information and return ONLY valid JSON (no markdown, no co
 Return ONLY the JSON object, no other text.`;
 
   try {
-    const result = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
-    });
+    // Retry with timeout
+    const result = await retryWithTimeout(
+      async () => {
+        return await genAI.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: prompt,
+        });
+      },
+      {
+        maxAttempts: 3,
+        timeoutMs: AI_TIMEOUT_MS,
+        initialDelayMs: 2000,
+      }
+    );
+    
     // @google/genai returns text directly
     const text = (result.text || '').trim();
     
@@ -113,13 +127,34 @@ Return ONLY the JSON object, no other text.`;
       throw new Error('No JSON found in response');
     }
     
-    const extractedData = JSON.parse(jsonMatch[0]) as BookContext;
+    let extractedData: BookContext;
+    try {
+      extractedData = JSON.parse(jsonMatch[0]) as BookContext;
+    } catch (parseError: any) {
+      // Fallback: create minimal structure
+      console.warn('JSON parse error, using fallback structure:', parseError);
+      extractedData = createFallbackBookContext(title, truncatedText);
+    }
     
     // Validate schema
     const validation = validateBookContextSchema(extractedData);
     
     // Calculate confidence
     const confidence = calculateConfidence(validation);
+    
+    // Check confidence threshold
+    if (confidence < MIN_CONFIDENCE_THRESHOLD) {
+      console.warn(`Low confidence (${confidence.toFixed(2)}) for book context extraction. Using fallback.`);
+      // Use fallback if confidence too low
+      extractedData = createFallbackBookContext(title, truncatedText);
+      const fallbackValidation = validateBookContextSchema(extractedData);
+      return {
+        data: extractedData,
+        confidence: calculateConfidence(fallbackValidation),
+        errors: [...validation.errors, 'Low confidence - used fallback'],
+        warnings: [...validation.warnings, 'Extraction confidence below threshold'],
+      };
+    }
     
     return {
       data: extractedData,
@@ -129,7 +164,15 @@ Return ONLY the JSON object, no other text.`;
     };
   } catch (error: any) {
     console.error('Book context extraction error:', error);
-    throw new Error(`Failed to extract book context: ${error.message}`);
+    // Fallback on complete failure
+    const fallbackData = createFallbackBookContext(title, truncatedText);
+    const fallbackValidation = validateBookContextSchema(fallbackData);
+    return {
+      data: fallbackData,
+      confidence: 0.3, // Low confidence for fallback
+      errors: [`Extraction failed: ${error.message}`, 'Used fallback structure'],
+      warnings: fallbackValidation.warnings,
+    };
   }
 }
 
@@ -164,10 +207,21 @@ Extract the following information and return ONLY valid JSON (no markdown, no co
 Return ONLY the JSON object, no other text.`;
 
   try {
-    const result = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
-    });
+    // Retry with timeout
+    const result = await retryWithTimeout(
+      async () => {
+        return await genAI.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: prompt,
+        });
+      },
+      {
+        maxAttempts: 3,
+        timeoutMs: AI_TIMEOUT_MS,
+        initialDelayMs: 2000,
+      }
+    );
+    
     // @google/genai returns text directly
     const text = (result.text || '').trim();
     
@@ -180,13 +234,33 @@ Return ONLY the JSON object, no other text.`;
       throw new Error('No JSON found in response');
     }
     
-    const extractedData = JSON.parse(jsonMatch[0]) as ChapterMetadata;
+    let extractedData: ChapterMetadata;
+    try {
+      extractedData = JSON.parse(jsonMatch[0]) as ChapterMetadata;
+    } catch (parseError: any) {
+      // Fallback: create minimal structure
+      console.warn('JSON parse error, using fallback structure:', parseError);
+      extractedData = createFallbackChapterMetadata(chapterContent, chapterNumber, chapterTitle);
+    }
     
     // Validate schema
     const validation = validateChapterMetadataSchema(extractedData);
     
     // Calculate confidence
     const confidence = calculateConfidence(validation);
+    
+    // Check confidence threshold
+    if (confidence < MIN_CONFIDENCE_THRESHOLD) {
+      console.warn(`Low confidence (${confidence.toFixed(2)}) for chapter metadata extraction. Using fallback.`);
+      extractedData = createFallbackChapterMetadata(chapterContent, chapterNumber, chapterTitle);
+      const fallbackValidation = validateChapterMetadataSchema(extractedData);
+      return {
+        data: extractedData,
+        confidence: calculateConfidence(fallbackValidation),
+        errors: [...validation.errors, 'Low confidence - used fallback'],
+        warnings: [...validation.warnings, 'Extraction confidence below threshold'],
+      };
+    }
     
     return {
       data: extractedData,
@@ -196,7 +270,54 @@ Return ONLY the JSON object, no other text.`;
     };
   } catch (error: any) {
     console.error('Chapter metadata extraction error:', error);
-    throw new Error(`Failed to extract chapter metadata: ${error.message}`);
+    // Fallback on complete failure
+    const fallbackData = createFallbackChapterMetadata(chapterContent, chapterNumber, chapterTitle);
+    const fallbackValidation = validateChapterMetadataSchema(fallbackData);
+    return {
+      data: fallbackData,
+      confidence: 0.3, // Low confidence for fallback
+      errors: [`Extraction failed: ${error.message}`, 'Used fallback structure'],
+      warnings: fallbackValidation.warnings,
+    };
   }
+}
+
+/**
+ * Create fallback book context when extraction fails
+ */
+function createFallbackBookContext(title: string, text: string): BookContext {
+  const words = text.split(/\s+/);
+  const summary = words.slice(0, 500).join(' ') + (words.length > 500 ? '...' : '');
+  
+  return {
+    summary,
+    characters: [],
+    world_setting: {},
+    writing_style: {
+      pov: 'third',
+    },
+    story_arc: {},
+  };
+}
+
+/**
+ * Create fallback chapter metadata when extraction fails
+ */
+function createFallbackChapterMetadata(
+  content: string,
+  chapterNumber: number,
+  chapterTitle?: string
+): ChapterMetadata {
+  const words = content.split(/\s+/);
+  const summary = words.slice(0, 200).join(' ') + (words.length > 200 ? '...' : '');
+  
+  return {
+    summary: `Chapter ${chapterNumber}${chapterTitle ? `: ${chapterTitle}` : ''}. ${summary}`,
+    plot_points: {
+      events: [],
+      conflicts: [],
+      resolutions: [],
+    },
+  };
 }
 

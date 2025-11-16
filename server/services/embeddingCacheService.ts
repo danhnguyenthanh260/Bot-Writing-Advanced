@@ -93,6 +93,39 @@ export async function clearOldCache(olderThanDays: number = 30): Promise<number>
 }
 
 /**
+ * Invalidate cache entries for specific content hashes
+ * Used when content changes and embeddings need regeneration
+ */
+export async function invalidateCacheEntries(contentHashes: string[]): Promise<number> {
+  if (contentHashes.length === 0) return 0;
+  
+  const placeholders = contentHashes.map((_, i) => `$${i + 1}`).join(', ');
+  const result = await db.query(
+    `DELETE FROM embedding_cache
+     WHERE content_hash IN (${placeholders})
+     RETURNING content_hash`,
+    contentHashes
+  );
+  
+  return result.rowCount || 0;
+}
+
+/**
+ * Invalidate cache when chapter content changes
+ */
+export async function invalidateChapterCache(chapterId: string): Promise<void> {
+  // Get old content hash
+  const chapterResult = await db.query(
+    'SELECT content_hash FROM recent_chapters WHERE chapter_id = $1',
+    [chapterId]
+  );
+  
+  if (chapterResult.rows.length > 0 && chapterResult.rows[0].content_hash) {
+    await invalidateCacheEntries([chapterResult.rows[0].content_hash]);
+  }
+}
+
+/**
  * Get cache statistics
  */
 export async function getCacheStats(): Promise<{

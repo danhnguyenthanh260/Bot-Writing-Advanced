@@ -122,8 +122,30 @@ Google-authenticated users receive a short-lived session token managed by `serve
 │       ├── postgres.ts
 │       ├── sessionStore.ts
 │       └── workProfilesStore.ts
+├── docs/                    # Tài liệu dự án
+│   ├── INDEX.md            # Mục lục tài liệu
+│   ├── setup/              # Hướng dẫn setup
+│   ├── implementation/     # Tài liệu implementation
+│   ├── troubleshooting/    # Xử lý lỗi
+│   ├── guides/             # Hướng dẫn sử dụng
+│   └── architecture/       # Kiến trúc hệ thống
 ├── types.ts
 └── ...
+
+## 📚 Documentation
+
+Tất cả tài liệu dự án được tổ chức trong thư mục `docs/`:
+
+- **[docs/INDEX.md](./docs/INDEX.md)** - Mục lục đầy đủ tất cả tài liệu
+- **[docs/guides/QUICK_START.md](./docs/guides/QUICK_START.md)** - Hướng dẫn khởi động nhanh
+- **[docs/PROJECT_STATUS.md](./docs/PROJECT_STATUS.md)** - Tình trạng dự án và roadmap
+
+**Các thư mục tài liệu:**
+- `docs/setup/` - Hướng dẫn cài đặt và cấu hình
+- `docs/implementation/` - Tài liệu implementation các phase
+- `docs/troubleshooting/` - Hướng dẫn xử lý lỗi
+- `docs/guides/` - Hướng dẫn sử dụng và các tính năng
+- `docs/architecture/` - Tài liệu kiến trúc và thiết kế
 
 ## 📞 Support & Contributions
 
