@@ -1,0 +1,384 @@
+/* Design System - Dei8 AI Writing Studio */
+
+/* ============================================
+   COLOR SYSTEM - LIGHT MODE
+   ============================================ */
+:root {
+  /* Primary Colors - Burnt Sienna Family */
+  --color-primary: #8B6F47;
+  --color-primary-dark: #6B5435;
+  --color-primary-light: #A0825F;
+  --color-primary-subtle: #D4C4B0;
+  --color-primary-bg: #F5F0EA;
+
+  /* Backgrounds */
+  --color-bg: #FBF9F6;
+  --color-bg-soft: #F5F3EF;
+  --color-surface: #FFFFFF;
+  --color-surface-strong: #F8F6F2;
+  --color-surface-hover: #FDFCF9;
+
+  /* Text Colors */
+  --color-text: #2C2416;
+  --color-text-muted: #6B6054;
+  --color-text-subtle: #9A8F82;
+  --color-text-on-primary: #FFFFFF;
+
+  /* Borders */
+  --color-border: rgba(139, 111, 71, 0.12);
+  --color-border-strong: rgba(139, 111, 71, 0.20);
+  --color-border-subtle: rgba(139, 111, 71, 0.08);
+  --color-divider: rgba(107, 96, 84, 0.15);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(139, 111, 71, 0.05);
+  --shadow-sm: 0 2px 4px 0 rgba(139, 111, 71, 0.06), 
+               0 1px 2px 0 rgba(139, 111, 71, 0.04);
+  --shadow-md: 0 4px 8px -2px rgba(139, 111, 71, 0.08),
+               0 2px 4px -1px rgba(139, 111, 71, 0.05);
+  --shadow-lg: 0 12px 24px -4px rgba(139, 111, 71, 0.12),
+               0 4px 8px -2px rgba(139, 111, 71, 0.08);
+  --shadow-xl: 0 20px 40px -8px rgba(139, 111, 71, 0.15),
+               0 8px 16px -4px rgba(139, 111, 71, 0.10);
+  --shadow-2xl: 0 32px 64px -12px rgba(139, 111, 71, 0.18),
+                0 12px 24px -4px rgba(139, 111, 71, 0.12);
+
+  /* Overlay */
+  --color-overlay: rgba(44, 36, 22, 0.45);
+  --color-overlay-light: rgba(44, 36, 22, 0.25);
+
+  /* Semantic Colors */
+  --color-success: #7A9471;
+  --color-success-light: #9FB89A;
+  --color-success-dark: #5F7560;
+  --color-error: #C85A5A;
+  --color-error-light: #E08A8A;
+  --color-error-dark: #A04545;
+  --color-warning: #D4A574;
+  --color-warning-light: #E6C199;
+  --color-warning-dark: #B8935F;
+  --color-info: #6B8FA3;
+  --color-info-light: #8FAFC0;
+  --color-info-dark: #547085;
+
+  /* Z-index */
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-fixed: 200;
+  --z-dropdown: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* Font Families */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   COLOR SYSTEM - DARK MODE
+   ============================================ */
+[data-theme="dark"] {
+  /* Primary Colors - Golden Amber Family */
+  --color-primary: #D4A574;
+  --color-primary-dark: #B8935F;
+  --color-primary-light: #E6C199;
+  --color-primary-subtle: rgba(212, 165, 116, 0.15);
+
+  /* Backgrounds */
+  --color-bg: #1A1816;
+  --color-bg-soft: #25221F;
+  --color-surface: #2E2B27;
+  --color-surface-strong: #35322D;
+  --color-surface-hover: #383530;
+
+  /* Text Colors */
+  --color-text: #F5F3EF;
+  --color-text-muted: #C9C4BB;
+  --color-text-subtle: #9A958D;
+  --color-text-on-primary: #1A1816;
+
+  /* Borders */
+  --color-border: rgba(212, 165, 116, 0.15);
+  --color-border-strong: rgba(212, 165, 116, 0.25);
+  --color-divider: rgba(201, 196, 187, 0.15);
+
+  /* Shadows (darker for dark mode) */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.35),
+               0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.4),
+               0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.45),
+               0 4px 8px -2px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.5),
+               0 8px 16px -4px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0 32px 64px -12px rgba(0, 0, 0, 0.55),
+                0 12px 24px -4px rgba(0, 0, 0, 0.45);
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.65);
+  --color-overlay-light: rgba(0, 0, 0, 0.45);
+
+  /* Semantic Colors (adjusted for dark mode) */
+  --color-success: #8FAC89;
+  --color-success-light: #A8C5A2;
+  --color-success-dark: #72856D;
+  --color-error: #E08A8A;
+  --color-error-light: #F5B5B5;
+  --color-error-dark: #C85A5A;
+  --color-warning: #E6C199;
+  --color-warning-light: #F0D4B3;
+  --color-warning-dark: #D4A574;
+  --color-info: #8FAFC0;
+  --color-info-light: #A8C5D0;
+  --color-info-dark: #6B8FA3;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+.font-display {
+  font-family: var(--font-serif);
+}
+
+.font-body {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Display Sizes */
+.text-display-1 {
+  font-size: 48px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.text-display-2 {
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.text-display-3 {
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.text-display-4 {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 600;
+  font-family: var(--font-serif);
+}
+
+.text-display-5 {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  font-family: var(--font-serif);
+}
+
+/* Body Sizes */
+.text-base {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.text-lg {
+  font-size: 18px;
+  line-height: 1.75;
+  font-weight: 400;
+}
+
+.text-sm {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.text-caption {
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.text-caption-sm {
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Font Weights */
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 300ms ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 300ms ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 300ms ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 300ms ease-out;
+}
+
+/* ============================================
+   TRANSITIONS
+   ============================================ */
+.transition-fast {
+  transition: all 200ms ease-in-out;
+}
+
+.transition-normal {
+  transition: all 300ms ease-in-out;
+}
+
+.transition-slow {
+  transition: all 500ms ease-in-out;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+/* Main Content Area */
+.main-content {
+  margin-left: 320px;
+  margin-top: 64px;
+  width: calc(100vw - 320px);
+  height: calc(100vh - 64px);
+  overflow: auto;
+  background: var(--color-bg);
+  transition: margin-left 300ms ease, width 300ms ease;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100vw;
+  }
+  
+  /* Sidebar adjustments for mobile */
+  aside {
+    top: 64px !important;
+  }
+}
+
+/* Scrollbar Styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: var(--color-bg-soft);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+

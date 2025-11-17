@@ -81,27 +81,40 @@ const UploadDocForm: React.FC<UploadDocFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 mb-4 shadow-[var(--shadow-md)] transition-all">
-      <label htmlFor="google-doc-url" className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 tracking-wide uppercase">
-        Phân tích Google Docs
-      </label>
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 mb-4 shadow-[var(--shadow-md)] transition-all hover:shadow-[var(--shadow-lg)]">
+      <h3 className="text-lg font-semibold text-[var(--color-text)] mb-2" style={{ fontFamily: 'var(--font-sans)' }}>
+        Upload Google Docs
+      </h3>
+      <p className="text-sm text-[var(--color-text-muted)] mb-4">
+        Paste a Google Docs URL to analyze your document
+      </p>
+      <div className="space-y-3">
         <input
           id="google-doc-url"
           type="url"
-          placeholder="Dán URL Google Docs..."
+          placeholder="https://docs.google.com/document/d/..."
           value={url}
           onChange={(event) => setUrl(event.target.value)}
-          className="flex-1 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] transition-all"
+          className="w-full h-12 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] transition-all"
+          style={{ fontSize: '14px' }}
           disabled={status === 'loading'}
           required
         />
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--color-text-on-primary)] font-semibold px-4 py-2 rounded-xl shadow-[var(--shadow-lg)] disabled:shadow-none transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:scale-100"
+          className="w-full h-12 bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--color-text-on-primary)] font-semibold rounded-lg shadow-[var(--shadow-lg)] disabled:shadow-none transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:scale-100"
+          style={{ fontSize: '16px' }}
         >
-          {status === 'loading' ? 'Đang tải...' : 'Phân tích'}
+          {status === 'loading' ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Đang phân tích...
+            </span>
+          ) : 'Phân tích'}
         </button>
       </div>
       {status === 'loading' && (

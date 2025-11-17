@@ -42,14 +42,15 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
       <aside
-        className={`w-80 flex-shrink-0 bg-[var(--color-surface-strong)] backdrop-blur-sm flex flex-col border-r border-[var(--color-border)] shadow-[var(--shadow-md)] z-[var(--z-fixed)] transition-all duration-300 ${
+        className={`fixed left-0 top-16 bottom-0 w-80 flex-shrink-0 bg-[var(--color-surface-strong)] backdrop-blur-sm flex flex-col border-r border-[var(--color-border)] shadow-[var(--shadow-md)] transition-all duration-300 ${
           isCollapsed ? 'w-0 overflow-hidden' : ''
         } ${
           isOpen
-            ? 'max-md:translate-x-0 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[var(--z-fixed)]'
-            : 'max-md:translate-x-[-100%] max-md:fixed max-md:inset-y-0 max-md:left-0'
+            ? 'max-md:translate-x-0'
+            : 'max-md:translate-x-[-100%]'
         }`}
         style={{
+          zIndex: 'var(--z-fixed)',
           backdropFilter: 'blur(8px) saturate(180%)',
           WebkitBackdropFilter: 'blur(8px) saturate(180%)',
         }}
@@ -84,56 +85,71 @@ const Sidebar: React.FC<SidebarProps> = ({
             </h2>
             {workProfiles.length > 0 ? (
               <ul className="space-y-2">
-                {workProfiles.map((profile) => (
-                  <li key={profile.id} className="group">
+                {workProfiles.map((profile) => {
+                  const isActive = selectedProfileId === profile.id;
+                  return (
+                  <li key={profile.id} className="group mb-3">
                     <button
                       onClick={() => onSelectProfile(profile.id)}
-                      className={`w-full text-left p-3 rounded-xl flex items-center justify-between transition-all duration-200 ${
-                        selectedProfileId === profile.id
-                          ? 'bg-[var(--color-primary)] text-[var(--color-text-on-primary)] shadow-[var(--shadow-lg)]'
-                          : 'hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)]'
+                      className={`w-full text-left p-4 rounded-xl flex items-center justify-between transition-all duration-200 border ${
+                        isActive
+                          ? 'bg-[var(--color-primary-subtle)] border-[var(--color-primary)] border-2 shadow-[var(--shadow-md)]'
+                          : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)]'
                       }`}
                     >
-                      <div className="flex items-center truncate min-w-0">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
                         <FileIcon
-                          className={`w-5 h-5 mr-3 flex-shrink-0 ${
-                            selectedProfileId === profile.id
-                              ? 'text-[var(--color-text-on-primary)]'
-                              : 'text-[var(--color-primary-dark)]'
+                          className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                            isActive ? 'text-[var(--color-primary-dark)]' : 'text-[var(--color-primary)]'
                           }`}
                         />
-                        <span
-                          className={`truncate text-sm font-medium ${
-                            selectedProfileId === profile.id
-                              ? 'text-[var(--color-text-on-primary)]'
-                              : 'text-[var(--color-text)]'
-                          }`}
-                        >
-                          {profile.title}
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`text-base font-semibold mb-1 truncate ${
+                            isActive ? 'text-[var(--color-primary-dark)]' : 'text-[var(--color-text)]'
+                          }`} style={{ fontFamily: 'var(--font-sans)' }}>
+                            {profile.title}
+                          </h4>
+                        <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
+                          {profile.document?.wordCount && (
+                            <p>{profile.document.wordCount.toLocaleString()} words</p>
+                          )}
+                          {profile.outline && profile.outline.length > 0 && (
+                            <p>{profile.outline.length} chapters</p>
+                          )}
+                          {profile.lastSyncedAt && (
+                            <p>Updated {new Date(profile.lastSyncedAt).toLocaleDateString('vi-VN', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}</p>
+                          )}
+                        </div>
+                        </div>
                       </div>
-                      <div
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onDeleteProfile(profile.id, profile.title);
                         }}
-                        className={`p-1 rounded-full transition-all duration-200 ${
-                          selectedProfileId === profile.id
-                            ? 'hover:bg-white/20'
+                        className={`p-2 rounded-lg transition-all duration-200 ml-2 flex-shrink-0 ${
+                          isActive
+                            ? 'hover:bg-[var(--color-primary-dark)]/20'
                             : 'hover:bg-[var(--color-surface-hover)] opacity-0 group-hover:opacity-100'
                         }`}
                       >
                         <TrashIcon
                           className={`w-4 h-4 ${
-                            selectedProfileId === profile.id
-                              ? 'text-[var(--color-text-on-primary)]/80 hover:text-[var(--color-text-on-primary)]'
+                            isActive
+                              ? 'text-[var(--color-primary-dark)] hover:text-[var(--color-error)]'
                               : 'text-[var(--color-text-muted)] hover:text-[var(--color-error)]'
                           }`}
                         />
-                      </div>
+                      </button>
                     </button>
                   </li>
-                ))}
+                );
+                })}
               </ul>
             ) : (
               <div className="p-6 text-center">

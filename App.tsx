@@ -624,7 +624,7 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
     const visiblePages = selectedProfileId ? pages.filter(p => workProfiles.find(wp => wp.id === selectedProfileId)?.pageIds.includes(p.id)) : [];
 
     return (
-        <div className="app-container bg-[var(--color-bg)] text-[var(--color-text)]">
+        <div className="app-container bg-[var(--color-bg)] text-[var(--color-text)]" style={{ position: 'relative' }}>
             {/* Header - Always visible at top */}
             <Header
                 user={user}
@@ -659,7 +659,15 @@ const targetProfileId = ensureProfileAssociation(profileIds, updatedSelectedProf
             />
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col bg-[var(--color-bg)] overflow-hidden min-w-0 relative">
+            <main 
+                className="main-content flex flex-col bg-[var(--color-bg)] overflow-hidden min-w-0 relative"
+                style={{
+                    marginLeft: '320px',
+                    marginTop: '64px',
+                    width: 'calc(100vw - 320px)',
+                    height: 'calc(100vh - 64px)',
+                }}
+            >
                 <div className="flex-1 min-h-0 overflow-hidden">
                     <DocumentCanvas
                         ref={canvasRef}

@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Design System - Dei8 AI Writing Studio */
+  
+  :root {
+    /* Light Mode - Burnt Sienna Family */
+    --primary: 139 111 71;
+    --primary-dark: 107 84 53;
+    --primary-light: 160 130 95;
+    --primary-subtle: 212 196 176;
+    
+    /* Backgrounds */
+    --bg-main: 251 249 246;
+    --bg-soft: 245 243 239;
+    --surface: 255 255 255;
+    --surface-strong: 248 246 242;
+    --surface-hover: 250 248 244;
+    
+    /* Text Colors */
+    --text-primary: 44 36 22;
+    --text-muted: 107 96 84;
+    --text-subtle: 154 143 130;
+    
+    /* Borders & Shadows */
+    --border: rgba(139, 111, 71, 0.12);
+    --border-strong: rgba(139, 111, 71, 0.20);
+    --shadow-color: 139 111 71;
+    
+    /* Status Colors */
+    --success: 34 197 94;
+    --error: 239 68 68;
+    --warning: 251 146 60;
+    --info: 59 130 246;
+  }
+  
+  [data-theme="dark"] {
+    /* Dark Mode - Golden Amber Family */
+    --primary: 212 165 116;
+    --primary-dark: 184 147 95;
+    --primary-light: 230 193 153;
+    --primary-subtle: 92 77 58;
+    
+    /* Backgrounds */
+    --bg-main: 26 24 22;
+    --bg-soft: 46 43 39;
+    --surface: 37 35 32;
+    --surface-strong: 42 39 36;
+    --surface-hover: 50 47 43;
+    
+    /* Text Colors */
+    --text-primary: 245 243 239;
+    --text-muted: 184 176 168;
+    --text-subtle: 138 130 120;
+    
+    /* Borders & Shadows */
+    --border: rgba(212, 165, 116, 0.15);
+    --border-strong: rgba(212, 165, 116, 0.25);
+    --shadow-color: 0 0 0;
+  }
+  
+  /* Typography - Base Styles */
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: rgb(var(--bg-main));
+    color: rgb(var(--text-primary));
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    line-height: 1.2;
+  }
+  
+  h1 {
+    font-size: 48px;
+  }
+  
+  h2 {
+    font-size: 36px;
+  }
+  
+  h3 {
+    font-size: 32px;
+  }
+  
+  h4 {
+    font-size: 28px;
+  }
+  
+  h5 {
+    font-size: 24px;
+  }
+  
+  h6 {
+    font-size: 20px;
+  }
+  
+  p {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  code, pre {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  
+  /* Focus Styles */
+  *:focus-visible {
+    outline: 2px solid rgb(var(--primary));
+    outline-offset: 2px;
+  }
+  
+  /* Scrollbar Styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--bg-soft));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--text-subtle));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--text-muted));
+  }
+}
+
+@layer utilities {
+  /* Shadow System */
+  .shadow-subtle {
+    box-shadow: 0 1px 2px rgba(var(--shadow-color), 0.05);
+  }
+  
+  .shadow-small {
+    box-shadow: 0 2px 4px rgba(var(--shadow-color), 0.08);
+  }
+  
+  .shadow-medium {
+    box-shadow: 0 4px 12px rgba(var(--shadow-color), 0.12);
+  }
+  
+  .shadow-large {
+    box-shadow: 0 8px 24px rgba(var(--shadow-color), 0.15);
+  }
+  
+  .shadow-xlarge {
+    box-shadow: 0 16px 48px rgba(var(--shadow-color), 0.18);
+  }
+  
+  /* Transitions */
+  .transition-fast {
+    transition: all 200ms ease-in-out;
+  }
+  
+  .transition-normal {
+    transition: all 300ms ease-in-out;
+  }
+  
+  .transition-slow {
+    transition: all 500ms ease-in-out;
+  }
+}
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');

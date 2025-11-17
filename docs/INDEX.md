@@ -17,19 +17,14 @@
 
 **Database Setup:**
 - [SETUP_POSTGRESQL_WINDOWS.md](./setup/SETUP_POSTGRESQL_WINDOWS.md) - Hướng dẫn cài đặt PostgreSQL trên Windows
-- [DATABASE_SETUP_GUIDE.md](./setup/DATABASE_SETUP_GUIDE.md) - Hướng dẫn setup database
-- [QUICK_DATABASE_SETUP.md](./setup/QUICK_DATABASE_SETUP.md) - Setup database nhanh
-- [STEP_BY_STEP_DB_SETUP.md](./setup/STEP_BY_STEP_DB_SETUP.md) - Setup database từng bước
+- [DATABASE_SETUP.md](./setup/DATABASE_SETUP.md) - Hướng dẫn setup database (tổng hợp: quick start, chi tiết, troubleshooting)
 - [DATABASE_URL_GUIDE.md](./setup/DATABASE_URL_GUIDE.md) - Hướng dẫn cấu hình DATABASE_URL
 - [VERIFY_DATABASE_CONNECTION.md](./setup/VERIFY_DATABASE_CONNECTION.md) - Kiểm tra kết nối database
 - [DB_RESET_GUIDE.md](./setup/DB_RESET_GUIDE.md) - Hướng dẫn reset database
 - [DATABASE_TABLES_OVERVIEW.md](./setup/DATABASE_TABLES_OVERVIEW.md) - Tổng quan các bảng database
 
 **pgvector Setup:**
-- [INSTALL_PGVECTOR_WINDOWS.md](./setup/INSTALL_PGVECTOR_WINDOWS.md) - Cài đặt pgvector trên Windows
-- [QUICK_INSTALL_PGVECTOR.md](./setup/QUICK_INSTALL_PGVECTOR.md) - Cài đặt pgvector nhanh
-- [BUILD_PGVECTOR_WINDOWS.md](./setup/BUILD_PGVECTOR_WINDOWS.md) - Build pgvector từ source
-- [BUILD_PGVECTOR_STEPS.md](./setup/BUILD_PGVECTOR_STEPS.md) - Các bước build pgvector
+- [PGVECTOR_SETUP.md](./setup/PGVECTOR_SETUP.md) - Hướng dẫn cài đặt pgvector (tổng hợp: build từ source, pre-built binary, Docker)
 
 **Build Tools:**
 - [SETUP_VS_BUILD_TOOLS.md](./setup/SETUP_VS_BUILD_TOOLS.md) - Setup Visual Studio Build Tools
@@ -46,10 +41,8 @@
 - [IMPLEMENTATION_PHASES.md](./implementation/IMPLEMENTATION_PHASES.md) - Tổng quan các phase implementation
 
 **Các Phase:**
-- [PHASE_1_FOUNDATION.md](./implementation/PHASE_1_FOUNDATION.md) - Phase 1: Foundation
-- [PHASE_1_QUICK_START.md](./implementation/PHASE_1_QUICK_START.md) - Quick start Phase 1
-- [PHASE_2_NORMALIZATION.md](./implementation/PHASE_2_NORMALIZATION.md) - Phase 2: Normalization
-- [PHASE_2_ISSUES_FIXED.md](./implementation/PHASE_2_ISSUES_FIXED.md) - Các vấn đề đã fix trong Phase 2
+- [PHASE_1_FOUNDATION.md](./implementation/PHASE_1_FOUNDATION.md) - Phase 1: Foundation (bao gồm quick start)
+- [PHASE_2_NORMALIZATION.md](./implementation/PHASE_2_NORMALIZATION.md) - Phase 2: Normalization (bao gồm issues fixed)
 - [PHASE_3_QUERY_SEARCH.md](./implementation/PHASE_3_QUERY_SEARCH.md) - Phase 3: Query & Search
 - [PHASE_4_ASYNC_PROCESSING.md](./implementation/PHASE_4_ASYNC_PROCESSING.md) - Phase 4: Async Processing
 - [PHASE_5_OPTIMIZATION.md](./implementation/PHASE_5_OPTIMIZATION.md) - Phase 5: Optimization
@@ -74,6 +67,18 @@
 **Quick Start:**
 - [QUICK_START.md](./guides/QUICK_START.md) - Hướng dẫn khởi động nhanh
 - [WHERE_TO_RUN.md](./guides/WHERE_TO_RUN.md) - Vị trí chạy lệnh
+
+**System Workflows:**
+- [SYSTEM_WORKFLOWS.md](./guides/SYSTEM_WORKFLOWS.md) - **Tài liệu tổng hợp mô tả tất cả các luồng hoạt động hệ thống**
+- [WORKFLOW_EXAMPLE.md](./guides/WORKFLOW_EXAMPLE.md) - **Ví dụ trực quan: Xử lý một đoạn truyện từ đầu đến cuối** ⭐
+- [WORKFLOW_ISSUES.md](./guides/WORKFLOW_ISSUES.md) - **Các vấn đề còn tồn tại trong các luồng hoạt động** ⚠️
+- [FIX_PLAN.md](./guides/FIX_PLAN.md) - **Kế hoạch chi tiết để sửa các vấn đề** 🔧
+
+**UI/UX Design:**
+- [FIGMA_MAKE_PROMPT.md](./guides/FIGMA_MAKE_PROMPT.md) - **Prompt để Figma Make tạo UI components** 🎨
+- [FIGMA_REVIEW_GUIDE.md](./guides/FIGMA_REVIEW_GUIDE.md) - **Hướng dẫn review UI design từ Figma** 🔍
+- [FIGMA_COMMUNITY_PUBLISH.md](./guides/FIGMA_COMMUNITY_PUBLISH.md) - **Hướng dẫn publish design lên Figma Community** 📤
+- [UI_IMPLEMENTATION_PLAN.md](./guides/UI_IMPLEMENTATION_PLAN.md) - **Kế hoạch implementation UI upgrade từ Figma** 🚀
 
 **Data Flow & Analysis:**
 - [GOOGLE_DOCS_TO_DB_FLOW.md](./guides/GOOGLE_DOCS_TO_DB_FLOW.md) - Luồng dữ liệu từ Google Docs đến DB
@@ -122,10 +127,15 @@
 ### Bắt Đầu Từ Đâu?
 
 1. **Lần đầu setup?** → Xem [QUICK_START.md](./guides/QUICK_START.md)
-2. **Cài đặt PostgreSQL?** → Xem [SETUP_POSTGRESQL_WINDOWS.md](./setup/SETUP_POSTGRESQL_WINDOWS.md)
-3. **Cài đặt pgvector?** → Xem [INSTALL_PGVECTOR_WINDOWS.md](./setup/INSTALL_PGVECTOR_WINDOWS.md)
-4. **Gặp lỗi?** → Xem [TROUBLESHOOTING.md](./troubleshooting/TROUBLESHOOTING.md)
-5. **Xem tình trạng dự án?** → Xem [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+2. **Xem ví dụ trực quan?** → Xem [WORKFLOW_EXAMPLE.md](./guides/WORKFLOW_EXAMPLE.md) ⭐
+3. **Hiểu các luồng hoạt động?** → Xem [SYSTEM_WORKFLOWS.md](./guides/SYSTEM_WORKFLOWS.md)
+4. **Xem các vấn đề còn tồn tại?** → Xem [WORKFLOW_ISSUES.md](./guides/WORKFLOW_ISSUES.md) ⚠️
+5. **Lập plan sửa các vấn đề?** → Xem [FIX_PLAN.md](./guides/FIX_PLAN.md) 🔧
+6. **Cài đặt PostgreSQL?** → Xem [SETUP_POSTGRESQL_WINDOWS.md](./setup/SETUP_POSTGRESQL_WINDOWS.md)
+7. **Setup database?** → Xem [DATABASE_SETUP.md](./setup/DATABASE_SETUP.md)
+8. **Cài đặt pgvector?** → Xem [PGVECTOR_SETUP.md](./setup/PGVECTOR_SETUP.md)
+9. **Gặp lỗi?** → Xem [TROUBLESHOOTING.md](./troubleshooting/TROUBLESHOOTING.md)
+10. **Xem tình trạng dự án?** → Xem [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 
 ### Theo Chủ Đề
 

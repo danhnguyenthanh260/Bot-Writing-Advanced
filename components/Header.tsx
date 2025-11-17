@@ -27,8 +27,9 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header
-      className="sticky top-0 left-0 right-0 h-16 backdrop-blur-md bg-[var(--color-surface-strong)]/80 border-b border-[var(--color-border)] shadow-[var(--shadow-sm)] flex items-center justify-between px-4 md:px-6 z-[var(--z-sticky)] flex-shrink-0"
+      className="fixed top-0 left-0 right-0 h-16 backdrop-blur-md bg-[var(--color-surface-strong)] border-b border-[var(--color-border)] shadow-[var(--shadow-sm)] flex items-center justify-between px-4 md:px-6 flex-shrink-0"
       style={{
+        zIndex: 'var(--z-fixed)',
         backdropFilter: 'blur(12px) saturate(180%)',
         WebkitBackdropFilter: 'blur(12px) saturate(180%)',
       }}

@@ -15,6 +15,87 @@ Phase 1 thiết lập foundation cho toàn bộ storage system:
 
 ---
 
+## 🚀 Quick Start
+
+### Step 1: Install Dependencies ✅
+```bash
+npm install pg @types/pg
+```
+**Status:** ✅ Already done!
+
+### Step 2: Setup PostgreSQL + pgvector
+
+**On Windows:**
+1. Install PostgreSQL: https://www.postgresql.org/download/windows/
+2. Install pgvector extension (xem [PGVECTOR_SETUP.md](../setup/PGVECTOR_SETUP.md)):
+   ```sql
+   -- Connect to PostgreSQL
+   CREATE EXTENSION IF NOT EXISTS vector;
+   ```
+
+**On Mac (using Homebrew):**
+```bash
+brew install postgresql@15
+brew install pgvector
+```
+
+**On Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get install postgresql-15 postgresql-contrib
+# Install pgvector (see: https://github.com/pgvector/pgvector)
+```
+
+### Step 3: Create Database
+
+```bash
+# Connect to PostgreSQL
+psql -U postgres
+
+# Create database
+CREATE DATABASE bot_writing_advanced;
+
+# Connect to database
+\c bot_writing_advanced
+
+# Enable extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "vector";
+```
+
+### Step 4: Run Schema
+
+```bash
+# From project root
+psql -U postgres -d bot_writing_advanced -f server/db/schema.sql
+```
+
+Or run from `psql`:
+```sql
+\i server/db/schema.sql
+```
+
+### Step 5: Setup Environment Variables
+
+1. Create `.env` file:
+```env
+DATABASE_URL=postgres://user:password@localhost:5432/bot_writing_advanced
+```
+
+### Step 6: Test Database Connection
+
+```bash
+npm run server
+```
+
+You should see:
+```
+Database connected
+```
+
+---
+
+---
+
 ## ✅ Implementation Checklist
 
 ### Week 1: Database Setup
